@@ -1,20 +1,17 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  LayoutDashboard, 
-  ReceiptText, 
-  Target, 
-  PiggyBank, 
-  Settings, 
-  PlusCircle, 
-  GraduationCap, 
-  LogIn, 
+import {
+  LayoutDashboard,
+  ReceiptText,
+  Target,
+  PiggyBank,
+  Settings,
+  PlusCircle,
   LogOut,
-  Menu,
   X
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction, onOpenLoginModal, isMobileOpen, setIsMobileOpen }) {
+export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction, isMobileOpen, setIsMobileOpen }) {
   const { user, logout } = useAuth();
 
   const navItems = [
@@ -29,7 +26,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
     <>
       {/* Mobile Overlay */}
       {isMobileOpen && (
-        <div 
+        <div
           onClick={() => setIsMobileOpen(false)}
           style={{
             position: 'fixed',
@@ -56,7 +53,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
         transition: 'transform var(--transition-smooth)',
         position: 'relative'
       }} className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
-        
+
         <div>
           {/* Brand Logo */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
@@ -86,8 +83,8 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
               </div>
             </div>
 
-            <button 
-              onClick={() => setIsMobileOpen(false)} 
+            <button
+              onClick={() => setIsMobileOpen(false)}
               className="mobile-close-btn"
               style={{ background: 'transparent', border: 'none', color: '#FFF', display: 'none', cursor: 'pointer' }}
             >
@@ -104,7 +101,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
             className="btn"
             style={{
               width: '100%',
-              background: 'linear-gradient(135deg, #624873, #4A3657)',
+              background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
               color: '#FFFFFF',
               marginBottom: '1.75rem',
               boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
@@ -150,7 +147,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
           </nav>
         </div>
 
-        {/* Footer User Profile & Sign In */}
+        {/* Footer User Profile */}
         <div style={{
           paddingTop: '1.25rem',
           borderTop: '1px solid rgba(255,255,255,0.1)',
@@ -159,7 +156,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             padding: '0.75rem',
             background: 'rgba(255,255,255,0.06)',
             borderRadius: 'var(--radius-md)'
@@ -169,7 +166,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
                 width: '36px',
                 height: '36px',
                 borderRadius: '50%',
-                background: user.isGuest ? '#F59E0B' : '#624873',
+                background: 'var(--primary)',
                 color: '#FFF',
                 display: 'flex',
                 alignItems: 'center',
@@ -183,29 +180,11 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.username}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: user.isGuest ? '#FCD34D' : 'rgba(255, 255, 255, 0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.isGuest ? 'Guest Mode' : user.university || 'Student'}
+                <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.university || 'Student'}
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={onOpenLoginModal}
-              title="Sign In / Switch Account"
-              style={{
-                background: 'rgba(255,255,255,0.1)',
-                border: 'none',
-                color: '#A7F3D0',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                padding: '0.4rem',
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'center'
-              }}
-            >
-              <LogIn size={18} />
-            </button>
           </div>
 
           <button

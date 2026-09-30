@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { X, Plus, Calendar, Tag, FileText, Repeat } from 'lucide-react';
+import { X, Repeat } from 'lucide-react';
 
 export default function TransactionModal({ isOpen, onClose, initialData = null }) {
   const { categories, addTransaction, updateTransaction } = useFinance();
@@ -10,6 +10,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
   const [amount, setAmount] = useState(initialData ? initialData.amount : '');
   const [categoryId, setCategoryId] = useState(initialData ? initialData.categoryId : '');
   const [date, setDate] = useState(initialData ? initialData.date : new Date().toISOString().split('T')[0]);
+  const [source, setSource] = useState(initialData ? (initialData.source || 'manual') : 'manual');
   const [isRecurring, setIsRecurring] = useState(initialData ? initialData.isRecurring : false);
   const [note, setNote] = useState(initialData ? initialData.note : '');
   const [error, setError] = useState('');
@@ -40,6 +41,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
       amount: Number(amount),
       categoryId: selectedCatId,
       date,
+      source,
       isRecurring,
       note: note.trim()
     };
@@ -123,12 +125,12 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
               <input
                 type="number"
                 step="0.01"
-                placeholder="0.00"
+                required
                 className="form-control"
-                style={{ paddingLeft: '3.2rem', fontSize: '1.1rem', fontWeight: 600 }}
+                style={{ paddingLeft: '3.2rem', fontSize: '1.1rem', fontWeight: 700 }}
+                placeholder="0.00"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
-                autoFocus
               />
             </div>
           </div>
@@ -138,14 +140,15 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
             <label className="form-label">Title / Description</label>
             <input
               type="text"
-              placeholder={type === 'income' ? 'e.g., Monthly Allowance, PTPTN' : 'e.g., Cafeteria Lunch, Textbook'}
+              required
               className="form-control"
+              placeholder="e.g. Cafeteria Lunch, PTPTN Loan"
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
           </div>
 
-          {/* Category Select */}
+          {/* Category Dropdown */}
           <div className="form-group">
             <label className="form-label">Category</label>
             <select
@@ -162,44 +165,60 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
             </select>
           </div>
 
+          {/* Transaction Source (Architecture for Future Bank Sync) */}
+          <div className="form-group">
+            <label className="form-label">Transaction Origin / Source</label>
+            <select
+              className="form-control"
+              value={source}
+              onChange={e => setSource(e.target.value)}
+            >
+              <option value="manual">📝 Manual Entry</option>
+              <option value="bank">💳 Bank Integration Feed (Future Ready)</option>
+              <option value="imported">📁 Imported File / CSV</option>
+            </select>
+          </div>
+
           {/* Date Picker */}
           <div className="form-group">
             <label className="form-label">Date</label>
             <input
               type="date"
+              required
               className="form-control"
               value={date}
               onChange={e => setDate(e.target.value)}
             />
           </div>
 
-          {/* Recurring Checkbox */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1.25rem' }}>
-            <input
-              type="checkbox"
-              id="recurringCheck"
-              checked={isRecurring}
-              onChange={e => setIsRecurring(e.target.checked)}
-              style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer' }}
-            />
-            <label htmlFor="recurringCheck" style={{ fontSize: '0.88rem', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Repeat size={14} color="var(--primary)" /> Recurring monthly (e.g., rent, allowance)
-            </label>
-          </div>
-
-          {/* Optional Note */}
+          {/* Note Input */}
           <div className="form-group">
-            <label className="form-label">Notes (Optional)</label>
+            <label className="form-label">Optional Note</label>
             <input
               type="text"
-              placeholder="Add extra details..."
               className="form-control"
+              placeholder="Add details, receipt reference..."
               value={note}
               onChange={e => setNote(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+          {/* Recurring Checkbox */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <input
+              type="checkbox"
+              id="isRecurring"
+              checked={isRecurring}
+              onChange={e => setIsRecurring(e.target.checked)}
+              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+            />
+            <label htmlFor="isRecurring" style={{ fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Repeat size={14} color="var(--primary)" /> Recurring monthly expense / income
+            </label>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>
               Cancel
             </button>

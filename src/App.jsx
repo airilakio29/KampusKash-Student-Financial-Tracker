@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
+import { missingFirebaseKeys } from './firebase';
 
+import SplashScreen from './components/SplashScreen';
 import GlitterBackground from './components/GlitterBackground';
-import Login from './components/Login';
+import Auth from './Auth';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import Tutorial, { shouldShowTutorial, resetTutorial } from './components/Tutorial';
 
 import DashboardView from './views/DashboardView';
 import TransactionsView from './views/TransactionsView';
@@ -17,14 +20,13 @@ import TransactionModal from './components/TransactionModal';
 import BudgetModal from './components/BudgetModal';
 import SavingsModal from './components/SavingsModal';
 import CategoryModal from './components/CategoryModal';
-import LoginModal from './components/LoginModal';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => shouldShowTutorial());
 
   // Modal Control States
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
 
@@ -93,7 +95,7 @@ function AppContent() {
           />
         );
       case 'settings':
-        return <SettingsView onOpenAddCategory={handleOpenAddCategory} />;
+        return <SettingsView onOpenAddCategory={handleOpenAddCategory} onReplayTutorial={() => setShowTutorial(true)} />;
       default:
         return (
           <DashboardView
@@ -124,7 +126,6 @@ function AppContent() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenAddTransaction={handleOpenAddTransaction}
-        onOpenLoginModal={() => setIsLoginModalOpen(true)}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
@@ -133,18 +134,12 @@ function AppContent() {
         <Header
           title={getPageTitle()}
           onOpenMobileMenu={() => setIsMobileOpen(true)}
-          onOpenLoginModal={() => setIsLoginModalOpen(true)}
         />
 
         <main className="content-area">
           {renderActiveView()}
         </main>
       </div>
-
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-      />
 
       <TransactionModal
         isOpen={isTransactionModalOpen}
@@ -168,26 +163,95 @@ function AppContent() {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
       />
+
+      {/* First-time user tutorial overlay */}
+      {showTutorial && (
+        <Tutorial
+          onComplete={() => setShowTutorial(false)}
+          setActiveTab={setActiveTab}
+        />
+      )}
     </div>
   );
 }
 
-function AppAuthenticator() {
-  const { isAuthenticated } = useAuth();
+function FirebaseSetupNotice() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      padding: '1.5rem'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '520px',
+        padding: '2.5rem 2rem',
+        background: 'var(--bg-card, rgba(54, 40, 68, 0.85))',
+        borderRadius: '16px',
+        border: '1px solid var(--border-light, rgba(255, 255, 255, 0.15))',
+        boxShadow: '0 32px 64px -16px rgba(0, 0, 0, 0.6)'
+      }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+          Firebase setup required
+        </h1>
+        <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-muted, rgba(255,255,255,0.65))' }}>
+          Add your Firebase web app credentials to the <code>.env</code> file, then restart the dev server.
+        </p>
+        <ul style={{ margin: '1rem 0 0', paddingLeft: '1.25rem', fontSize: '0.85rem', lineHeight: 1.9 }}>
+          {missingFirebaseKeys.map((key) => (
+            <li key={key}><code>{key}</code></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
-  if (!isAuthenticated) {
-    return <Login />;
+function AuthScreen() {
+  return (
+    <>
+      <GlitterBackground />
+      <Auth />
+    </>
+  );
+}
+
+function AppAuthenticator() {
+  const { user, isAuthenticated, isAuthResolved, isFirebaseConfigured } = useAuth();
+
+  if (!isFirebaseConfigured) {
+    return <FirebaseSetupNotice />;
   }
 
-  return <AppContent />;
+  if (!isAuthResolved) {
+    // The splash screen handles the visual loading state; render nothing here
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
+
+  return (
+    <FinanceProvider key={user.id}>
+      <AppContent />
+    </FinanceProvider>
+  );
 }
 
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false);
+
+  const handleSplashFinished = useCallback(() => {
+    setSplashDone(true);
+  }, []);
+
   return (
     <AuthProvider>
-      <FinanceProvider>
-        <AppAuthenticator />
-      </FinanceProvider>
+      {!splashDone && <SplashScreen onFinished={handleSplashFinished} />}
+      {splashDone && <AppAuthenticator />}
     </AuthProvider>
   );
 }

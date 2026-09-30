@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { generateFinancialPDF } from '../utils/pdfExport';
+import { useAuth } from './AuthContext';
+import { db, doc, onSnapshot, setDoc } from '../firebase';
 
 const FinanceContext = createContext();
 
@@ -22,151 +24,103 @@ const defaultCategories = [
   { id: 'cat-9', name: 'Entertainment & Leisure', type: 'expense', color: '#6366F1', icon: 'Film' }
 ];
 
-const defaultTransactions = [
-  {
-    id: 'tx-1',
-    date: new Date().toISOString().split('T')[0],
-    title: 'PTPTN / Scholarship Disbursement',
-    amount: 2500.00,
-    type: 'income',
-    categoryId: 'cat-2',
-    isRecurring: false,
-    note: 'Semester 1 allowance'
-  },
-  {
-    id: 'tx-2',
-    date: new Date(Date.now() - 1 * 86400000).toISOString().split('T')[0],
-    title: 'Monthly Family Allowance',
-    amount: 850.00,
-    type: 'income',
-    categoryId: 'cat-1',
-    isRecurring: true,
-    note: 'Bank transfer'
-  },
-  {
-    id: 'tx-3',
-    date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
-    title: 'Semester Tuition Fee Deposit',
-    amount: 1200.00,
-    type: 'expense',
-    categoryId: 'cat-4',
-    isRecurring: false,
-    note: 'Paid via portal'
-  },
-  {
-    id: 'tx-4',
-    date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0],
-    title: 'Campus Hostel Rent',
-    amount: 350.00,
-    type: 'expense',
-    categoryId: 'cat-5',
-    isRecurring: true,
-    note: 'Monthly rental'
-  },
-  {
-    id: 'tx-5',
-    date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0],
-    title: 'Cafeteria & Grocery Meals',
-    amount: 145.50,
-    type: 'expense',
-    categoryId: 'cat-6',
-    isRecurring: false,
-    note: 'Weekly food expense'
-  },
-  {
-    id: 'tx-6',
-    date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
-    title: 'Textbooks & Printing',
-    amount: 85.00,
-    type: 'expense',
-    categoryId: 'cat-7',
-    isRecurring: false,
-    note: 'Course materials'
-  },
-  {
-    id: 'tx-7',
-    date: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0],
-    title: 'RapidKL Transport Pass Reload',
-    amount: 50.00,
-    type: 'expense',
-    categoryId: 'cat-8',
-    isRecurring: true,
-    note: 'Monthly card reload'
-  }
-];
-
-const defaultBudgets = [
-  { id: 'b-1', categoryId: 'cat-6', monthlyLimit: 450.00 }, // Food
-  { id: 'b-2', categoryId: 'cat-5', monthlyLimit: 400.00 }, // Hostel
-  { id: 'b-3', categoryId: 'cat-8', monthlyLimit: 100.00 }, // Transport
-  { id: 'b-4', categoryId: 'cat-9', monthlyLimit: 150.00 }  // Entertainment
-];
-
-const defaultSavings = [
-  {
-    id: 's-1',
-    title: 'New Laptop for Programming',
-    targetAmount: 3200.00,
-    currentAmount: 1850.00,
-    targetDate: '2026-12-31',
-    category: 'Tech'
-  },
-  {
-    id: 's-2',
-    title: 'Emergency Campus Fund',
-    targetAmount: 1000.00,
-    currentAmount: 650.00,
-    targetDate: '2026-11-15',
-    category: 'Safety'
-  }
-];
+const defaultTransactions = [];
+const defaultBudgets = [];
+const defaultSavings = [];
 
 export function FinanceProvider({ children }) {
-  // Load initial state from LocalStorage or use defaults
+  const { user, updateUserProfile } = useAuth();
+  const userId = user.id;
+
+  // State
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+      const saved = localStorage.getItem(`${STORAGE_KEYS.CATEGORIES}_${userId}`);
       return saved ? JSON.parse(saved) : defaultCategories;
     } catch { return defaultCategories; }
   });
 
   const [transactions, setTransactions] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+      const saved = localStorage.getItem(`${STORAGE_KEYS.TRANSACTIONS}_${userId}`);
       return saved ? JSON.parse(saved) : defaultTransactions;
     } catch { return defaultTransactions; }
   });
 
   const [budgets, setBudgets] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.BUDGETS);
+      const saved = localStorage.getItem(`${STORAGE_KEYS.BUDGETS}_${userId}`);
       return saved ? JSON.parse(saved) : defaultBudgets;
     } catch { return defaultBudgets; }
   });
 
   const [savingsGoals, setSavingsGoals] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SAVINGS);
+      const saved = localStorage.getItem(`${STORAGE_KEYS.SAVINGS}_${userId}`);
       return saved ? JSON.parse(saved) : defaultSavings;
     } catch { return defaultSavings; }
   });
 
-  // Sync state changes to LocalStorage
+  // Real-time Firestore Sync per User UID
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
-  }, [categories]);
+    const userDocRef = doc(db, 'users', userId);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.profile && updateUserProfile) {
+          if (user.username !== data.profile.username || user.university !== data.profile.university) {
+            updateUserProfile(data.profile);
+          }
+        }
+        if (data.categories) setCategories(data.categories);
+        if (data.transactions) setTransactions(data.transactions);
+        if (data.budgets) setBudgets(data.budgets);
+        if (data.savingsGoals) setSavingsGoals(data.savingsGoals);
+      } else {
+        // Initial Seed for New Firestore User - empty transactions, budgets, savings
+        setDoc(userDocRef, {
+          profile: {
+            username: user.username,
+            email: user.email,
+            university: user.university,
+            currency: user.currency || 'RM'
+          },
+          categories: defaultCategories,
+          transactions: [],
+          budgets: [],
+          savingsGoals: [],
+          createdAt: new Date().toISOString()
+        }).catch(err => console.warn('Firestore seed warning', err));
+      }
+    }, (err) => {
+      console.warn('Firestore sync listener active in local mode', err);
+    });
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
-  }, [transactions]);
+    return () => unsubscribe();
+  }, [userId]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(budgets));
-  }, [budgets]);
+  // Helper to sync changes to Firestore & LocalStorage
+  const persistUserData = (newCat = categories, newTx = transactions, newBud = budgets, newSav = savingsGoals) => {
+    try {
+      localStorage.setItem(`${STORAGE_KEYS.CATEGORIES}_${userId}`, JSON.stringify(newCat));
+      localStorage.setItem(`${STORAGE_KEYS.TRANSACTIONS}_${userId}`, JSON.stringify(newTx));
+      localStorage.setItem(`${STORAGE_KEYS.BUDGETS}_${userId}`, JSON.stringify(newBud));
+      localStorage.setItem(`${STORAGE_KEYS.SAVINGS}_${userId}`, JSON.stringify(newSav));
+    } catch (e) {
+      console.error('LocalStorage write error', e);
+    }
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SAVINGS, JSON.stringify(savingsGoals));
-  }, [savingsGoals]);
+    if (user?.id) {
+      const userDocRef = doc(db, 'users', userId);
+      setDoc(userDocRef, {
+        categories: newCat,
+        transactions: newTx,
+        budgets: newBud,
+        savingsGoals: newSav,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(e => console.warn('Firestore sync error', e));
+    }
+  };
 
   // Financial Calculations
   const totalIncome = transactions
@@ -198,22 +152,29 @@ export function FinanceProvider({ children }) {
     })
     .filter(item => item.amount > 0);
 
-  // Transaction CRUD
+  // Transaction CRUD (supports 'source': 'manual' | 'bank' | 'imported')
   const addTransaction = (newTx) => {
     const created = {
       ...newTx,
       id: `tx-${Date.now()}`,
-      amount: Number(newTx.amount)
+      amount: Number(newTx.amount),
+      source: newTx.source || 'manual'
     };
-    setTransactions(prev => [created, ...prev]);
+    const updated = [created, ...transactions];
+    setTransactions(updated);
+    persistUserData(categories, updated, budgets, savingsGoals);
   };
 
   const updateTransaction = (id, updatedTx) => {
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updatedTx, amount: Number(updatedTx.amount) } : t));
+    const updated = transactions.map(t => t.id === id ? { ...t, ...updatedTx, amount: Number(updatedTx.amount) } : t);
+    setTransactions(updated);
+    persistUserData(categories, updated, budgets, savingsGoals);
   };
 
   const deleteTransaction = (id) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+    const updated = transactions.filter(t => t.id !== id);
+    setTransactions(updated);
+    persistUserData(categories, updated, budgets, savingsGoals);
   };
 
   // Category CRUD
@@ -223,28 +184,35 @@ export function FinanceProvider({ children }) {
       id: `cat-${Date.now()}`,
       color: newCat.color || '#52B788'
     };
-    setCategories(prev => [...prev, cat]);
+    const updated = [...categories, cat];
+    setCategories(updated);
+    persistUserData(updated, transactions, budgets, savingsGoals);
   };
 
   const deleteCategory = (id) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
+    const updated = categories.filter(c => c.id !== id);
+    setCategories(updated);
+    persistUserData(updated, transactions, budgets, savingsGoals);
   };
 
   // Budget CRUD
   const upsertBudget = (categoryId, monthlyLimit) => {
-    setBudgets(prev => {
-      const existingIndex = prev.findIndex(b => b.categoryId === categoryId);
-      if (existingIndex >= 0) {
-        const copy = [...prev];
-        copy[existingIndex] = { ...copy[existingIndex], monthlyLimit: Number(monthlyLimit) };
-        return copy;
-      }
-      return [...prev, { id: `b-${Date.now()}`, categoryId, monthlyLimit: Number(monthlyLimit) }];
-    });
+    let updated = [];
+    const existingIndex = budgets.findIndex(b => b.categoryId === categoryId);
+    if (existingIndex >= 0) {
+      updated = [...budgets];
+      updated[existingIndex] = { ...updated[existingIndex], monthlyLimit: Number(monthlyLimit) };
+    } else {
+      updated = [...budgets, { id: `b-${Date.now()}`, categoryId, monthlyLimit: Number(monthlyLimit) }];
+    }
+    setBudgets(updated);
+    persistUserData(categories, transactions, updated, savingsGoals);
   };
 
   const deleteBudget = (id) => {
-    setBudgets(prev => prev.filter(b => b.id !== id));
+    const updated = budgets.filter(b => b.id !== id);
+    setBudgets(updated);
+    persistUserData(categories, transactions, updated, savingsGoals);
   };
 
   // Savings Goal CRUD
@@ -255,39 +223,49 @@ export function FinanceProvider({ children }) {
       targetAmount: Number(newGoal.targetAmount),
       currentAmount: Number(newGoal.currentAmount || 0)
     };
-    setSavingsGoals(prev => [...prev, goal]);
+    const updated = [...savingsGoals, goal];
+    setSavingsGoals(updated);
+    persistUserData(categories, transactions, budgets, updated);
   };
 
   const depositToSavingsGoal = (goalId, amount) => {
     const numAmount = Number(amount);
-    setSavingsGoals(prev => prev.map(g => {
+    const updatedGoals = savingsGoals.map(g => {
       if (g.id === goalId) {
         return { ...g, currentAmount: g.currentAmount + numAmount };
       }
       return g;
-    }));
+    });
+    setSavingsGoals(updatedGoals);
 
-    // Optionally create a transaction for the savings deposit
     const goal = savingsGoals.find(g => g.id === goalId);
+    let updatedTx = transactions;
     if (goal) {
-      addTransaction({
+      const depositTx = {
+        id: `tx-${Date.now()}`,
         date: new Date().toISOString().split('T')[0],
         title: `Savings Deposit: ${goal.title}`,
         amount: numAmount,
         type: 'expense',
-        categoryId: 'cat-6', // Default or savings allocation
+        categoryId: 'cat-6',
         isRecurring: false,
-        note: 'Deposit towards goal'
-      });
+        source: 'manual',
+        note: 'Deposit towards savings goal'
+      };
+      updatedTx = [depositTx, ...transactions];
+      setTransactions(updatedTx);
     }
+    persistUserData(categories, updatedTx, budgets, updatedGoals);
   };
 
   const deleteSavingsGoal = (id) => {
-    setSavingsGoals(prev => prev.filter(g => g.id !== id));
+    const updated = savingsGoals.filter(g => g.id !== id);
+    setSavingsGoals(updated);
+    persistUserData(categories, transactions, budgets, updated);
   };
 
   // Data Export to PDF
-  const exportToPDF = (user) => {
+  const exportToPDF = (currentUser) => {
     generateFinancialPDF({
       transactions,
       categories,
@@ -295,13 +273,13 @@ export function FinanceProvider({ children }) {
       totalIncome,
       totalExpense,
       totalSavedInGoals,
-      user
+      user: currentUser || user
     });
   };
 
-  // Data Export to CSV (Legacy fallback)
+  // Data Export to CSV
   const exportToCSV = () => {
-    const headers = ['ID', 'Date', 'Type', 'Title', 'Amount (RM)', 'Category', 'Recurring', 'Note'];
+    const headers = ['ID', 'Date', 'Type', 'Title', 'Amount (RM)', 'Category', 'Source', 'Recurring', 'Note'];
     const rows = transactions.map(t => {
       const cat = categories.find(c => c.id === t.categoryId);
       return [
@@ -311,6 +289,7 @@ export function FinanceProvider({ children }) {
         `"${t.title.replace(/"/g, '""')}"`,
         t.amount.toFixed(2),
         `"${cat ? cat.name : 'Uncategorized'}"`,
+        t.source || 'manual',
         t.isRecurring ? 'Yes' : 'No',
         `"${(t.note || '').replace(/"/g, '""')}"`
       ];
@@ -328,11 +307,12 @@ export function FinanceProvider({ children }) {
     document.body.removeChild(link);
   };
 
-  // Backup & Restore LocalStorage JSON Data
+  // Backup & Restore JSON Data
   const exportJSONBackup = () => {
     const dataBundle = {
       version: 1,
       exportDate: new Date().toISOString(),
+      user: user.username,
       categories,
       transactions,
       budgets,
@@ -349,22 +329,20 @@ export function FinanceProvider({ children }) {
 
   const importJSONBackup = (jsonData) => {
     try {
-      if (jsonData.categories) setCategories(jsonData.categories);
-      if (jsonData.transactions) setTransactions(jsonData.transactions);
-      if (jsonData.budgets) setBudgets(jsonData.budgets);
-      if (jsonData.savingsGoals) setSavingsGoals(jsonData.savingsGoals);
+      const newCat = jsonData.categories || categories;
+      const newTx = jsonData.transactions || transactions;
+      const newBud = jsonData.budgets || budgets;
+      const newSav = jsonData.savingsGoals || savingsGoals;
+      setCategories(newCat);
+      setTransactions(newTx);
+      setBudgets(newBud);
+      setSavingsGoals(newSav);
+      persistUserData(newCat, newTx, newBud, newSav);
       return true;
     } catch (err) {
       console.error('Failed to import JSON data', err);
       return false;
     }
-  };
-
-  const resetToSampleData = () => {
-    setCategories(defaultCategories);
-    setTransactions(defaultTransactions);
-    setBudgets(defaultBudgets);
-    setSavingsGoals(defaultSavings);
   };
 
   return (
@@ -391,8 +369,7 @@ export function FinanceProvider({ children }) {
       exportToPDF,
       exportToCSV,
       exportJSONBackup,
-      importJSONBackup,
-      resetToSampleData
+      importJSONBackup
     }}>
       {children}
     </FinanceContext.Provider>

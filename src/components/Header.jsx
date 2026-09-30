@@ -1,10 +1,10 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Menu, Calendar, ShieldCheck, FileText, LogIn } from 'lucide-react';
+import { Menu, Calendar, ShieldCheck, FileText, LogOut } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 
-export default function Header({ onOpenMobileMenu, onOpenLoginModal, title = "Dashboard" }) {
-  const { user } = useAuth();
+export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
+  const { user, logout } = useAuth();
   const { exportToPDF } = useFinance();
 
   const todayStr = new Date().toLocaleDateString('en-MY', {
@@ -20,9 +20,9 @@ export default function Header({ onOpenMobileMenu, onOpenLoginModal, title = "Da
       alignItems: 'center',
       justify: 'space-between',
       padding: '1.25rem 2rem',
-      background: 'rgba(98, 72, 115, 0.92)',
+      background: 'color-mix(in srgb, var(--bg-app) 92%, transparent)',
       backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+      borderBottom: '1px solid color-mix(in srgb, var(--border-light) 100%, transparent)',
       position: 'sticky',
       top: 0,
       zIndex: 90
@@ -37,10 +37,10 @@ export default function Header({ onOpenMobileMenu, onOpenLoginModal, title = "Da
         </button>
 
         <div>
-          <h2 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF' }}>
+          <h2 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>
             {title}
           </h2>
-          <div style={{ fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.7)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem' }}>
             <span>Welcome back, <strong>{user.username}</strong> 👋</span>
           </div>
         </div>
@@ -52,32 +52,32 @@ export default function Header({ onOpenMobileMenu, onOpenLoginModal, title = "Da
           display: 'flex',
           alignItems: 'center',
           gap: '0.45rem',
-          background: 'rgba(255, 255, 255, 0.12)',
+          background: 'var(--bg-card-subtle)',
           padding: '0.45rem 0.85rem',
           borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          border: '1px solid var(--border-light)',
           fontSize: '0.82rem',
-          color: 'rgba(255, 255, 255, 0.8)',
+          color: 'var(--text-main)',
           fontWeight: 500
         }}>
-          <Calendar size={14} color="rgba(255, 255, 255, 0.8)" />
+          <Calendar size={14} color="var(--text-main)" />
           <span>{todayStr}</span>
         </div>
 
-        {/* Guest / User Status Badge */}
-        <div className={`badge ${user.isGuest ? 'badge-guest' : 'badge-income'}`}>
+        {/* Signed-in Status Badge */}
+        <div className="badge badge-income">
           <ShieldCheck size={13} />
-          <span>{user.isGuest ? 'Guest Mode' : 'Signed In'}</span>
+          <span>Signed In</span>
         </div>
 
-        {/* Sign In / Switch Account Button */}
+        {/* Log Out Button */}
         <button
-          onClick={onOpenLoginModal}
-          className="btn btn-primary btn-sm"
-          title="Sign In / Switch Account"
+          onClick={logout}
+          className="btn btn-secondary btn-sm"
+          title="Log Out"
         >
-          <LogIn size={15} />
-          <span className="export-text">{user.isGuest ? 'Sign In' : 'Switch User'}</span>
+          <LogOut size={15} />
+          <span className="export-text">Log Out</span>
         </button>
 
         {/* Quick PDF Export */}

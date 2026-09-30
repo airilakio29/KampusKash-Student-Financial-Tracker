@@ -55,10 +55,10 @@ export function generateFinancialPDF({ transactions, categories, totalBalance, t
   doc.setTextColor(...textColor);
 
   // Left Column: User details
-  const studentName = user?.username || 'Alex Student';
-  const studentEmail = user?.email || 'alex.campus@university.edu.my';
-  const institution = user?.university || 'Universiti Teknologi Malaysia (UTM)';
-  const accountType = user?.isGuest ? 'Guest Account' : 'Authenticated Student';
+  const studentName = user?.username || 'Student';
+  const studentEmail = user?.email || '-';
+  const institution = user?.university || 'Campus Student';
+  const accountType = 'Authenticated Student';
 
   doc.text(`Student Name: ${studentName}`, 18, 47);
   doc.text(`Email Address: ${studentEmail}`, 18, 52.5);

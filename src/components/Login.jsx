@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Lock, User, LogIn, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
@@ -9,6 +9,22 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [themeColors, setThemeColors] = useState({});
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const style = getComputedStyle(root);
+    setThemeColors({
+      primary: style.getPropertyValue('--primary').trim() || '#624873',
+      primaryHover: style.getPropertyValue('--primary-hover').trim() || '#4A3657',
+      primaryLight: style.getPropertyValue('--primary-light').trim() || '#E8DEF5',
+      bgApp: style.getPropertyValue('--bg-app').trim() || '#624873',
+      textMain: style.getPropertyValue('--text-main').trim() || '#F3EDF9',
+      textMuted: style.getPropertyValue('--text-muted').trim() || '#C4B5D4',
+      bgCard: style.getPropertyValue('--bg-card').trim() || 'rgba(74, 54, 87, 0.65)',
+      borderLight: style.getPropertyValue('--border-light').trim() || 'rgba(255, 255, 255, 0.12)'
+    });
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -40,10 +56,10 @@ export default function Login() {
         width: '100%',
         maxWidth: '420px',
         padding: '2.5rem',
-        background: 'rgba(74, 54, 87, 0.6)',
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(20px)',
         borderRadius: '6px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        border: '1px solid var(--border-light)',
         boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.5)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -118,13 +134,13 @@ export default function Login() {
                   boxSizing: 'border-box'
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = '#624873';
-                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(232, 222, 245, 0.15)';
+                  e.target.style.borderColor = 'var(--primary)';
+                  e.target.style.background = 'color-mix(in srgb, var(--text-main) 10%, transparent)';
+                  e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  e.target.style.background = 'rgba(255, 255, 255, 0.06)';
+                  e.target.style.borderColor = 'color-mix(in srgb, var(--border-light) 100%, transparent)';
+                  e.target.style.background = 'color-mix(in srgb, var(--text-main) 6%, transparent)';
                   e.target.style.boxShadow = 'none';
                 }}
               />
@@ -167,13 +183,13 @@ export default function Login() {
                   boxSizing: 'border-box'
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = '#624873';
-                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(232, 222, 245, 0.15)';
+                  e.target.style.borderColor = 'var(--primary)';
+                  e.target.style.background = 'color-mix(in srgb, var(--text-main) 10%, transparent)';
+                  e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  e.target.style.background = 'rgba(255, 255, 255, 0.06)';
+                  e.target.style.borderColor = 'color-mix(in srgb, var(--border-light) 100%, transparent)';
+                  e.target.style.background = 'color-mix(in srgb, var(--text-main) 6%, transparent)';
                   e.target.style.boxShadow = 'none';
                 }}
               />
@@ -226,7 +242,7 @@ export default function Login() {
               fontSize: '0.95rem',
               fontWeight: 700,
               color: '#FFFFFF',
-              background: 'linear-gradient(135deg, #624873, #4A3657)',
+              background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
               border: 'none',
               borderRadius: '4px',
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -236,19 +252,19 @@ export default function Login() {
               gap: '0.5rem',
               transition: 'all 0.18s ease',
               opacity: loading ? 0.7 : 1,
-              boxShadow: '0 4px 14px rgba(98, 72, 115, 0.4)'
+              boxShadow: '0 4px 14px color-mix(in srgb, var(--primary) 40%, transparent)'
             }}
             onMouseEnter={(e) => {
               if (!loading) {
-                e.target.style.background = 'linear-gradient(135deg, #4A3657, #624873)';
+                e.target.style.background = 'linear-gradient(135deg, var(--primary-hover), var(--primary))';
                 e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 6px 18px rgba(98, 72, 115, 0.5)';
+                e.target.style.boxShadow = '0 6px 18px rgba(0, 0, 0, 0.4)';
               }
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = 'linear-gradient(135deg, #624873, #4A3657)';
+              e.target.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-hover))';
               e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 14px rgba(98, 72, 115, 0.4)';
+              e.target.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.3)';
             }}
           >
             {loading ? (

@@ -19,52 +19,56 @@ export default function PieChart({ data = [] }) {
     );
   }
 
-  // Calculate SVG arc paths
-  let cumulativeAngle = 0;
-  const slices = data.map((item, index) => {
-    const percentage = item.amount / totalSpent;
-    const angle = percentage * 360;
-    const startAngle = cumulativeAngle;
-    const endAngle = cumulativeAngle + angle;
-    cumulativeAngle += angle;
+  // Calculate SVG arc paths without mutating variables outside reducer
+  const { slices } = data.reduce(
+    (acc, item, index) => {
+      const percentage = item.amount / totalSpent;
+      const angle = percentage === 1 ? 359.99 : percentage * 360;
+      const startAngle = acc.currentAngle;
+      const endAngle = startAngle + angle;
 
-    // Convert angles to SVG arc coordinates
-    const startRad = (startAngle - 90) * (Math.PI / 180);
-    const endRad = (endAngle - 90) * (Math.PI / 180);
+      // Convert angles to SVG arc coordinates
+      const startRad = (startAngle - 90) * (Math.PI / 180);
+      const endRad = (endAngle - 90) * (Math.PI / 180);
 
-    const radius = 90;
-    const innerRadius = 50; // Donut hole for modern visual style
-    const cx = 110;
-    const cy = 110;
+      const radius = 90;
+      const innerRadius = 50; // Donut hole for modern visual style
+      const cx = 110;
+      const cy = 110;
 
-    const x1 = cx + radius * Math.cos(startRad);
-    const y1 = cy + radius * Math.sin(startRad);
-    const x2 = cx + radius * Math.cos(endRad);
-    const y2 = cy + radius * Math.sin(endRad);
+      const x1 = cx + radius * Math.cos(startRad);
+      const y1 = cy + radius * Math.sin(startRad);
+      const x2 = cx + radius * Math.cos(endRad);
+      const y2 = cy + radius * Math.sin(endRad);
 
-    const ix1 = cx + innerRadius * Math.cos(endRad);
-    const iy1 = cy + innerRadius * Math.sin(endRad);
-    const ix2 = cx + innerRadius * Math.cos(startRad);
-    const iy2 = cy + innerRadius * Math.sin(startRad);
+      const ix1 = cx + innerRadius * Math.cos(endRad);
+      const iy1 = cy + innerRadius * Math.sin(endRad);
+      const ix2 = cx + innerRadius * Math.cos(startRad);
+      const iy2 = cy + innerRadius * Math.sin(startRad);
 
-    const largeArcFlag = angle > 180 ? 1 : 0;
+      const largeArcFlag = angle > 180 ? 1 : 0;
 
-    const pathData = [
-      `M ${x1} ${y1}`,
-      `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-      `L ${ix1} ${iy1}`,
-      `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${ix2} ${iy2}`,
-      'Z'
-    ].join(' ');
+      const pathData = [
+        `M ${x1} ${y1}`,
+        `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+        `L ${ix1} ${iy1}`,
+        `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${ix2} ${iy2}`,
+        'Z'
+      ].join(' ');
 
-    return {
-      ...item,
-      percentage: (percentage * 100).toFixed(1),
-      pathData,
-      color: item.color || '#52B788',
-      index
-    };
-  });
+      acc.slices.push({
+        ...item,
+        percentage: (percentage * 100).toFixed(1),
+        pathData,
+        color: item.color || '#52B788',
+        index
+      });
+
+      acc.currentAngle = endAngle;
+      return acc;
+    },
+    { slices: [], currentAngle: 0 }
+  );
 
   const activeItem = hoveredIndex !== null ? slices[hoveredIndex] : null;
 

@@ -96,7 +96,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
           </div>
           <div className="metric-info">
             <div className="metric-label">Saved in Goals</div>
-            <div className="metric-value" style={{ color: '#2563EB' }}>
+            <div className="metric-value" style={{ color: 'var(--primary)' }}>
               RM {totalSavedInGoals.toFixed(2)}
             </div>
             <div className="metric-sub">
@@ -236,7 +236,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
         <div className="card">
           <div className="card-title">
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <PiggyBank size={18} color="#3B82F6" /> Top Savings Goals
+              <PiggyBank size={18} color="var(--primary)" /> Top Savings Goals
             </span>
             <button onClick={onOpenAddSavings} className="btn btn-secondary btn-sm">
               + New Goal

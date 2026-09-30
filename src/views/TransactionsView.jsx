@@ -3,7 +3,6 @@ import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import { 
   Search, 
-  Filter, 
   PlusCircle, 
   FileText, 
   Trash2, 
@@ -136,11 +135,21 @@ export default function TransactionsView({ onOpenAddTransaction, onEditTransacti
                         {t.date}
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          {t.title}
+                        <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <span>{t.title}</span>
                           {t.isRecurring && (
                             <span className="badge badge-recurring" title="Recurring Monthly">
                               <Repeat size={12} /> Recurring
+                            </span>
+                          )}
+                          {t.source === 'bank' && (
+                            <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', fontSize: '0.68rem' }} title="Bank Synced Feed">
+                              💳 Bank
+                            </span>
+                          )}
+                          {t.source === 'imported' && (
+                            <span className="badge" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#A855F7', fontSize: '0.68rem' }} title="Imported CSV File">
+                              📁 Import
                             </span>
                           )}
                         </div>
@@ -181,7 +190,11 @@ export default function TransactionsView({ onOpenAddTransaction, onEditTransacti
                             <Edit3 size={14} />
                           </button>
                           <button 
-                            onClick={() => deleteTransaction(t.id)}
+                            onClick={() => {
+                              if (window.confirm(`Delete transaction "${t.title}"?`)) {
+                                deleteTransaction(t.id);
+                              }
+                            }}
                             className="btn btn-danger btn-icon" 
                             style={{ width: '32px', height: '32px' }}
                             title="Delete"

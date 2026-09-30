@@ -15,10 +15,10 @@
   --primary-light: #E8DEF5;
   --primary-badge: #F3EDF9;
   
-  --sage-accent: #624873;
-  --sage-glow: rgba(98, 72, 115, 0.25);
-  --mint-sparkle: #D4C1E3;
-  --emerald-accent: #624873;
+  --sage-accent: var(--primary);
+  --sage-glow: rgba(0, 0, 0, 0.15); /* Fallback */
+  --mint-sparkle: var(--primary-light);
+  --emerald-accent: var(--primary);
   --gold-sparkle: #F39C12;
   --ruby-sparkle: #E74C3C;
   --sapphire-sparkle: #00A8FF;
@@ -28,16 +28,16 @@
   --text-light: #9A8AB0;
   --text-white: #FFFFFF;
   
-  --income-bg: rgba(98, 72, 115, 0.3);
-  --expense-bg: rgba(231, 76, 60, 0.2);
-  --warning-bg: rgba(245, 158, 11, 0.2);
+  --income-bg: color-mix(in srgb, var(--income) 20%, transparent);
+  --expense-bg: color-mix(in srgb, var(--expense) 20%, transparent);
+  --warning-bg: color-mix(in srgb, var(--warning) 20%, transparent);
   
   --income: #C4B5D4;
   --expense: #F87171;
   --warning: #FBBF24;
   
   --border-light: rgba(15, 45, 30, 0.08);
-  --border-focus: #624873;
+  --border-focus: var(--primary);
   
   --radius-sm: 2px;
   --radius-md: 4px;
@@ -114,7 +114,7 @@ body {
 .card {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border-light);
   box-shadow: var(--shadow-card);
   padding: 1.5rem;
   transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
@@ -173,7 +173,8 @@ body {
   right: 0;
   width: 80px;
   height: 80px;
-  background: radial-gradient(circle, var(--sage-glow) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--primary-light) 0%, transparent 70%);
+  opacity: 0.15;
   border-radius: 50%;
   pointer-events: none;
 }
@@ -189,23 +190,23 @@ body {
 }
 
   .metric-icon-box.balance {
-    background: rgba(232, 222, 245, 0.15);
-    color: #E8DEF5;
+    background: color-mix(in srgb, var(--primary) 20%, transparent);
+    color: var(--primary);
   }
 
   .metric-icon-box.income {
-    background: rgba(196, 181, 212, 0.2);
-    color: #E8DEF5;
+    background: var(--income-bg);
+    color: var(--income);
   }
 
   .metric-icon-box.expense {
-    background: rgba(248, 113, 113, 0.2);
-    color: #FCA5A5;
+    background: var(--expense-bg);
+    color: var(--expense);
   }
 
   .metric-icon-box.savings {
-    background: rgba(59, 130, 246, 0.2);
-    color: #93C5FD;
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary);
   }
 
 .metric-info {
@@ -275,9 +276,9 @@ body {
 }
 
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--text-main) 10%, transparent);
     color: var(--text-main);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: color-mix(in srgb, var(--text-main) 15%, transparent);
   }
 
   .btn-danger {
@@ -372,7 +373,7 @@ body {
 }
 
   .custom-table tr:hover td {
-    background: rgba(255, 255, 255, 0.06);
+    background: color-mix(in srgb, var(--text-main) 6%, transparent);
   }
 
 /* Form Controls */
@@ -404,14 +405,14 @@ body {
   .form-control:focus {
     border-color: var(--border-focus);
     background: var(--bg-card);
-    box-shadow: 0 0 0 3px rgba(232, 222, 245, 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
   }
 
 /* Progress Bars */
   .progress-bar-bg {
     width: 100%;
     height: 10px;
-    background: rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--text-main) 12%, transparent);
     border-radius: 10px;
     overflow: hidden;
     margin-top: 0.5rem;
