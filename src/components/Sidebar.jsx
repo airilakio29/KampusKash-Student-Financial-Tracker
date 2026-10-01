@@ -12,6 +12,7 @@ import {
   Landmark,
   BarChart3
 } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction, isMobileOpen, setIsMobileOpen }) {
   const { user, logout } = useAuth();
@@ -83,17 +84,22 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
               <div style={{
                 width: '42px',
                 height: '42px',
-                borderRadius: 'var(--radius-md)',
-                background: 'rgba(255, 255, 255, 0.15)',
+                borderRadius: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#FFFFFF',
-                fontFamily: 'Plus Jakarta Sans',
-                fontWeight: 800,
-                fontSize: '1rem'
+                overflow: 'hidden',
+                flexShrink: 0
               }}>
-                KK
+                <img
+                  src={logoImg || `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/')}
+                  alt="KampusKash"
+                  onError={(e) => {
+                    const fallback = `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/');
+                    if (e.target.src !== fallback) e.target.src = fallback;
+                  }}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
               </div>
               <div>
                 <h1 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.1 }}>

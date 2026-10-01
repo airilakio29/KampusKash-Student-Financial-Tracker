@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { missingFirebaseKeys } from './firebase';
 
-import SplashScreen from './components/SplashScreen';
+import FullScreenLoader from './components/FullScreenLoader';
+import ResetPassword from './components/ResetPassword';
 import GlitterBackground from './components/GlitterBackground';
 import Auth from './Auth';
 import Sidebar from './components/Sidebar';
@@ -312,29 +313,67 @@ function FirebaseSetupNotice() {
   );
 }
 
-function AuthScreen() {
-  return (
-    <>
-      <GlitterBackground />
-      <Auth />
-    </>
-  );
+function checkPasswordResetRoute() {
+  try {
+    const pathname = window.location.pathname.toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    const mode = searchParams.get('mode');
+    const oobCode = searchParams.get('oobCode');
+
+    if (pathname.includes('/reset-password') || pathname.endsWith('reset-password')) {
+      return true;
+    }
+    if (mode === 'resetPassword' || Boolean(oobCode)) {
+      return true;
+    }
+    const hash = window.location.hash;
+    if (hash.includes('reset-password') || hash.includes('oobCode')) {
+      return true;
+    }
+  } catch {
+    // Fallback
+  }
+  return false;
 }
 
 function AppAuthenticator() {
-  const { user, isAuthenticated, isAuthResolved, isFirebaseConfigured } = useAuth();
+  const { user, isAuthenticated, isFirebaseConfigured } = useAuth();
+  const [inResetFlow, setInResetFlow] = useState(checkPasswordResetRoute);
+
+  // Synchronize on URL changes / back-forward navigation
+  useEffect(() => {
+    const handleUrlChange = () => {
+      setInResetFlow(checkPasswordResetRoute());
+    };
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, []);
 
   if (!isFirebaseConfigured) {
     return <FirebaseSetupNotice />;
   }
 
-  if (!isAuthResolved) {
-    // The splash screen handles the visual loading state; render nothing here
-    return null;
+  // Custom Password Reset Page for Firebase Action Emails or /reset-password
+  if (inResetFlow) {
+    return (
+      <>
+        <GlitterBackground />
+        <ResetPassword onBackToLogin={() => setInResetFlow(false)} />
+      </>
+    );
   }
 
   if (!isAuthenticated) {
-    return <AuthScreen />;
+    return (
+      <>
+        <GlitterBackground />
+        <Auth />
+      </>
+    );
   }
 
   return (
@@ -344,17 +383,21 @@ function AppAuthenticator() {
   );
 }
 
-export default function App() {
-  const [splashDone, setSplashDone] = useState(false);
-
-  const handleSplashFinished = useCallback(() => {
-    setSplashDone(true);
-  }, []);
+function AppWithLoader() {
+  const { isAuthResolved } = useAuth();
 
   return (
+    <>
+      <FullScreenLoader isResolved={isAuthResolved} />
+      {isAuthResolved && <AppAuthenticator />}
+    </>
+  );
+}
+
+export default function App() {
+  return (
     <AuthProvider>
-      {!splashDone && <SplashScreen onFinished={handleSplashFinished} />}
-      {splashDone && <AppAuthenticator />}
+      <AppWithLoader />
     </AuthProvider>
   );
 }

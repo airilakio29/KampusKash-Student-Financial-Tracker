@@ -29,14 +29,18 @@ graph TD
 1. **Presentation Layer (`src/views/`, `src/components/`)**: React 19 views consume unified hooks (`useFinance`, `useAuth`) without direct database queries.
 2. **Context & State Management (`src/context/`)**: Maintains centralized financial state, memoized calculations, and optimistic UI updates.
 3. **Service Layer (`src/services/`)**: Encapsulates all domain logic, validations, and data persistence:
-   - `authService.js` — Authentication flows, credential validation, safe user display formatting.
+   - `authService.js` — Authentication flows, credential validation, safe user display formatting, and custom password reset actions (`verifyResetCode`, `confirmNewPassword`, `sendPasswordReset`).
    - `accountService.js` — Manual multi-account creation, validation, and balance aggregates.
    - `transactionService.js` — Income/expense records, account balance adjustments, filtering, and monthly aggregations.
    - `budgetService.js` — Category budget limits, usage tracking, and over-budget threshold calculation.
    - `savingsService.js` — Milestone targets, deposits, and progress calculation.
    - `profileService.js` — User profile sanitization (rejects UIDs/hashes) and Firestore sync.
    - `settingsService.js` — User preferences, theme settings, and onboarding tour status.
-4. **Cloud Persistence (Cloud Firestore)**: Scoped strictly to `/users/{userId}` where `{userId} == request.auth.uid`.
+4. **App Presentation & Authentication Flow**:
+   - `FullScreenLoader.jsx` — Renders centered branding with smooth breathing/pulse glow and indeterminate progress bar while `onAuthStateChanged` resolves.
+   - `ResetPassword.jsx` — Handles custom Firebase action codes (`oobCode`) from query params and hash routes, validating codes via `verifyPasswordResetCode` and applying new passwords with `confirmPasswordReset`.
+   - `Auth.jsx` — Polished student authentication interface featuring KampusKash branding and self-service password recovery.
+5. **Cloud Persistence (Cloud Firestore)**: Scoped strictly to `/users/{userId}` where `{userId} == request.auth.uid`.
 
 ---
 

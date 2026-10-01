@@ -5,7 +5,6 @@ import {
   createAccount,
   validateAccount,
   calculateTotalAccountBalance,
-  getAccountById,
   ACCOUNT_TYPES
 } from '../src/services/accountService.js';
 
@@ -35,7 +34,9 @@ import {
 
 import {
   isTechnicalId,
-  formatFirebaseUser
+  formatFirebaseUser,
+  verifyResetCode,
+  confirmNewPassword
 } from '../src/services/authService.js';
 
 import {
@@ -93,6 +94,22 @@ describe('KampusKash Phase 1 Foundation Test Suite', () => {
         email: 'faiz@campus.my'
       };
       assert.equal(getCleanDisplayName(user), 'Ahmad Faiz');
+    });
+
+    it('should handle verifyResetCode gracefully when unconfigured or invalid', async () => {
+      const res = await verifyResetCode('dummy-oob-code');
+      assert.equal(typeof res.success, 'boolean');
+      if (!res.success) {
+        assert.ok(res.code || res.error);
+      }
+    });
+
+    it('should handle confirmNewPassword gracefully when unconfigured or invalid', async () => {
+      const res = await confirmNewPassword('dummy-oob-code', 'newSecretPassword123');
+      assert.equal(typeof res.success, 'boolean');
+      if (!res.success) {
+        assert.ok(res.code || res.error);
+      }
     });
   });
 

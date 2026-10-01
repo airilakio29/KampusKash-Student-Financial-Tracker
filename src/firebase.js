@@ -8,7 +8,9 @@ import {
   signOut, 
   onAuthStateChanged,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset
 } from 'firebase/auth';
 import { 
   getFirestore,
@@ -76,6 +78,8 @@ export {
   onAuthStateChanged,
   updateProfile,
   sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
   doc,
   getDoc,
   setDoc,

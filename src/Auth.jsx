@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
-import { Lock, User, LogIn, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle2, KeyRound, ArrowLeft } from 'lucide-react';
+import { Lock, User, LogIn, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle2, ArrowLeft, Mail, Send } from 'lucide-react';
+import logoImg from './assets/logo.png';
 
 export default function Auth() {
   const { 
@@ -176,37 +177,50 @@ export default function Auth() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '14px',
-            background: 'linear-gradient(135deg, #10B981, #059669)',
+            width: '64px',
+            height: '64px',
+            borderRadius: '16px',
+            margin: '0 auto 1rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 1rem',
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: 800,
-            fontSize: '1.4rem',
-            color: '#FFFFFF',
-            boxShadow: '0 8px 20px rgba(16, 185, 129, 0.35)'
+            position: 'relative'
           }}>
-            KK
+            <img
+              src={logoImg || `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/')}
+              alt="KampusKash Logo"
+              onError={(e) => {
+                const fallback = `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/');
+                if (e.target.src !== fallback) e.target.src = fallback;
+              }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                borderRadius: '16px',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)'
+              }}
+            />
           </div>
           <h1 style={{
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: "'Plus Jakarta Sans', var(--font-sans, sans-serif)",
             fontSize: '1.75rem',
             fontWeight: 800,
             color: 'var(--text-main, #FFFFFF)',
-            marginBottom: '0.25rem'
+            marginBottom: '0.25rem',
+            letterSpacing: '-0.025em'
           }}>
             KampusKash
           </h1>
           <p style={{
             fontSize: '0.85rem',
-            color: 'var(--text-muted, rgba(255, 255, 255, 0.6))',
-            fontWeight: 500
+            color: 'var(--text-muted, #C4B5D4)',
+            fontWeight: 500,
+            margin: 0
           }}>
-            Create your account to start tracking your student finances
+            {mode === 'signup' && 'Create your account to start tracking your student finances'}
+            {mode === 'login' && 'Welcome back! Sign in to manage your campus wallet'}
+            {mode === 'reset' && 'Reset your account password via university email'}
           </p>
         </div>
 
@@ -480,7 +494,7 @@ export default function Auth() {
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 color: '#FFFFFF',
-                background: 'linear-gradient(135deg, #10B981, #059669)',
+                background: 'linear-gradient(135deg, var(--primary, #8B5CF6), var(--primary-hover, #7C3AED))',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -488,7 +502,7 @@ export default function Auth() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+                boxShadow: '0 4px 16px color-mix(in srgb, var(--primary, #8B5CF6) 35%, transparent)'
               }}
             >
               <UserPlus size={18} /> Create Account
@@ -535,7 +549,7 @@ export default function Auth() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: 'var(--primary-light, #10B981)',
+                    color: 'var(--primary-light, #C4B5FD)',
                     fontSize: '0.78rem',
                     fontWeight: 600,
                     cursor: 'pointer'
@@ -592,7 +606,7 @@ export default function Auth() {
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 color: '#FFFFFF',
-                background: 'linear-gradient(135deg, #10B981, #059669)',
+                background: 'linear-gradient(135deg, var(--primary, #8B5CF6), var(--primary-hover, #7C3AED))',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -600,7 +614,7 @@ export default function Auth() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+                boxShadow: '0 4px 16px color-mix(in srgb, var(--primary, #8B5CF6) 35%, transparent)'
               }}
             >
               <LogIn size={18} /> Log In
@@ -609,28 +623,44 @@ export default function Auth() {
         ) : (
           /* Password Reset Mode */
           <form onSubmit={handlePasswordResetSubmit}>
+            <div style={{
+              background: 'color-mix(in srgb, var(--primary, #8B5CF6) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--primary, #8B5CF6) 25%, transparent)',
+              borderRadius: '10px',
+              padding: '0.85rem 1rem',
+              marginBottom: '1.25rem',
+              fontSize: '0.82rem',
+              color: 'var(--text-muted, #C4B5D4)',
+              lineHeight: 1.5
+            }}>
+              Enter your registered student email address. We will send you an official Firebase password reset link.
+            </div>
+
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
                 Account Email Address
               </label>
-              <input
-                type="email"
-                required
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="Enter your registered email address"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  fontSize: '0.9rem',
-                  color: 'var(--text-main)',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '8px',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="email"
+                  required
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="student@university.edu.my"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem 0.75rem 2.6rem',
+                    fontSize: '0.9rem',
+                    color: 'var(--text-main)',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '8px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
             </div>
 
             <button
@@ -642,7 +672,7 @@ export default function Auth() {
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 color: '#FFFFFF',
-                background: 'linear-gradient(135deg, #10B981, #059669)',
+                background: 'linear-gradient(135deg, var(--primary, #8B5CF6), var(--primary-hover, #7C3AED))',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -651,31 +681,56 @@ export default function Auth() {
                 justifyContent: 'center',
                 gap: '0.5rem',
                 marginBottom: '1rem',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+                boxShadow: '0 4px 16px color-mix(in srgb, var(--primary, #8B5CF6) 35%, transparent)'
               }}
             >
-              <KeyRound size={18} /> Send Reset Link
+              <Send size={16} /> {loading ? 'Sending Link...' : 'Send Reset Link'}
             </button>
 
-            <button
-              type="button"
-              onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
-              style={{
-                width: '100%',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-muted)',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem'
-              }}
-            >
-              <ArrowLeft size={16} /> Back to Sign Up
-            </button>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  padding: '0.6rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <ArrowLeft size={14} /> Back to Login
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  padding: '0.6rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                Sign Up Instead
+              </button>
+            </div>
           </form>
         )}
 

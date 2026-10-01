@@ -14,6 +14,8 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
   sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
   isFirebaseConfigured
 } from '../firebase.js';
 
@@ -125,6 +127,30 @@ export async function sendPasswordReset(email) {
   }
   try {
     await sendPasswordResetEmail(auth, email);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message, code: error.code };
+  }
+}
+
+export async function verifyResetCode(actionCode) {
+  if (!isFirebaseConfigured || !auth) {
+    return { success: false, code: 'auth/not-configured', error: 'Firebase is not configured.' };
+  }
+  try {
+    const email = await verifyPasswordResetCode(auth, actionCode);
+    return { success: true, email };
+  } catch (error) {
+    return { success: false, error: error.message, code: error.code };
+  }
+}
+
+export async function confirmNewPassword(actionCode, newPassword) {
+  if (!isFirebaseConfigured || !auth) {
+    return { success: false, code: 'auth/not-configured', error: 'Firebase is not configured.' };
+  }
+  try {
+    await confirmPasswordReset(auth, actionCode, newPassword);
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message, code: error.code };
