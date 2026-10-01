@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { FinanceProvider } from './context/FinanceContext';
+import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { missingFirebaseKeys } from './firebase';
 
 import SplashScreen from './components/SplashScreen';
@@ -8,7 +8,7 @@ import GlitterBackground from './components/GlitterBackground';
 import Auth from './Auth';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import Tutorial, { shouldShowTutorial, resetTutorial } from './components/Tutorial';
+import Tutorial from './components/Tutorial';
 
 import DashboardView from './views/DashboardView';
 import TransactionsView from './views/TransactionsView';
@@ -22,9 +22,12 @@ import SavingsModal from './components/SavingsModal';
 import CategoryModal from './components/CategoryModal';
 
 function AppContent() {
+  const { tutorialCompleted, completeTutorial } = useFinance();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(() => shouldShowTutorial());
+  const [isReplayingTutorial, setIsReplayingTutorial] = useState(false);
+
+  const isTourActive = !tutorialCompleted || isReplayingTutorial;
 
   // Modal Control States
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -95,7 +98,12 @@ function AppContent() {
           />
         );
       case 'settings':
-        return <SettingsView onOpenAddCategory={handleOpenAddCategory} onReplayTutorial={() => setShowTutorial(true)} />;
+        return (
+          <SettingsView
+            onOpenAddCategory={handleOpenAddCategory}
+            onReplayTutorial={() => setIsReplayingTutorial(true)}
+          />
+        );
       default:
         return (
           <DashboardView
@@ -164,11 +172,17 @@ function AppContent() {
         onClose={() => setIsCategoryModalOpen(false)}
       />
 
-      {/* First-time user tutorial overlay */}
-      {showTutorial && (
+      {/* Modern Contextual Product Tour */}
+      {isTourActive && (
         <Tutorial
-          onComplete={() => setShowTutorial(false)}
+          onComplete={() => {
+            completeTutorial();
+            setIsReplayingTutorial(false);
+          }}
+          activeTab={activeTab}
           setActiveTab={setActiveTab}
+          isTransactionModalOpen={isTransactionModalOpen}
+          onOpenAddTransaction={handleOpenAddTransaction}
         />
       )}
     </div>

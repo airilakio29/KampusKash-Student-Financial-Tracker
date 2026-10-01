@@ -44,7 +44,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
   return (
     <div>
       {/* 4 Hero Metric Summary Cards */}
-      <div className="grid-metrics">
+      <div className="grid-metrics" data-tour="dashboard-metrics">
         <div className="card metric-card">
           <div className="metric-icon-box balance">
             <Wallet size={24} />

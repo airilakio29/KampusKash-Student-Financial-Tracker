@@ -9,7 +9,8 @@ const STORAGE_KEYS = {
   TRANSACTIONS: 'student_tracker_transactions',
   CATEGORIES: 'student_tracker_categories',
   BUDGETS: 'student_tracker_budgets',
-  SAVINGS: 'student_tracker_savings'
+  SAVINGS: 'student_tracker_savings',
+  TUTORIAL: 'kampuskash_tutorial_completed'
 };
 
 const defaultCategories = [
@@ -61,6 +62,13 @@ export function FinanceProvider({ children }) {
     } catch { return defaultSavings; }
   });
 
+  const [tutorialCompleted, setTutorialCompleted] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`);
+      return saved === 'true';
+    } catch { return false; }
+  });
+
   // Real-time Firestore Sync per User UID
   useEffect(() => {
     const userDocRef = doc(db, 'users', userId);
@@ -76,6 +84,14 @@ export function FinanceProvider({ children }) {
         if (data.transactions) setTransactions(data.transactions);
         if (data.budgets) setBudgets(data.budgets);
         if (data.savingsGoals) setSavingsGoals(data.savingsGoals);
+        if (typeof data.tutorialCompleted === 'boolean') {
+          setTutorialCompleted(data.tutorialCompleted);
+          try {
+            localStorage.setItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`, String(data.tutorialCompleted));
+          } catch (e) {
+            console.error('LocalStorage write error', e);
+          }
+        }
       } else {
         // Initial Seed for New Firestore User - empty transactions, budgets, savings
         setDoc(userDocRef, {
@@ -89,6 +105,7 @@ export function FinanceProvider({ children }) {
           transactions: [],
           budgets: [],
           savingsGoals: [],
+          tutorialCompleted: false,
           createdAt: new Date().toISOString()
         }).catch(err => console.warn('Firestore seed warning', err));
       }
@@ -98,6 +115,38 @@ export function FinanceProvider({ children }) {
 
     return () => unsubscribe();
   }, [userId]);
+
+  const completeTutorial = () => {
+    setTutorialCompleted(true);
+    try {
+      localStorage.setItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`, 'true');
+    } catch (e) {
+      console.error('LocalStorage write error', e);
+    }
+    if (user?.id) {
+      const userDocRef = doc(db, 'users', userId);
+      setDoc(userDocRef, {
+        tutorialCompleted: true,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Firestore tutorial sync warning', err));
+    }
+  };
+
+  const resetTutorial = () => {
+    setTutorialCompleted(false);
+    try {
+      localStorage.removeItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`);
+    } catch (e) {
+      console.error('LocalStorage write error', e);
+    }
+    if (user?.id) {
+      const userDocRef = doc(db, 'users', userId);
+      setDoc(userDocRef, {
+        tutorialCompleted: false,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Firestore tutorial sync warning', err));
+    }
+  };
 
   // Helper to sync changes to Firestore & LocalStorage
   const persistUserData = (newCat = categories, newTx = transactions, newBud = budgets, newSav = savingsGoals) => {
@@ -369,7 +418,10 @@ export function FinanceProvider({ children }) {
       exportToPDF,
       exportToCSV,
       exportJSONBackup,
-      importJSONBackup
+      importJSONBackup,
+      tutorialCompleted,
+      completeTutorial,
+      resetTutorial
     }}>
       {children}
     </FinanceContext.Provider>

@@ -47,7 +47,7 @@ export default function TransactionsView({ onOpenAddTransaction, onEditTransacti
             <button onClick={() => exportToPDF(user)} className="btn btn-secondary">
               <FileText size={16} /> Export PDF
             </button>
-            <button onClick={onOpenAddTransaction} className="btn btn-primary">
+            <button data-tour="transactions-add-btn" onClick={onOpenAddTransaction} className="btn btn-primary">
               <PlusCircle size={16} /> + Add Transaction
             </button>
           </div>

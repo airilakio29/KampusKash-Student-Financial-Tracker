@@ -43,7 +43,8 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
     deleteCategory, 
     exportJSONBackup, 
     importJSONBackup, 
-    resetToSampleData 
+    resetToSampleData,
+    resetTutorial: resetFinanceTutorial
   } = useFinance();
   const { user } = useAuth();
 
@@ -144,7 +145,7 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
         </div>
 
         {/* 9 Preset Theme Cards Grid */}
-        <div style={{
+        <div data-tour="theme-selector" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '0.85rem',
@@ -380,10 +381,12 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
             <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '0.5rem 0' }} />
 
             <button 
+              data-tour="replay-tutorial-btn"
               onClick={() => {
+                resetFinanceTutorial();
                 resetTutorial();
                 if (onReplayTutorial) onReplayTutorial();
-                setMsg({ text: 'Tutorial will now replay. Enjoy the walkthrough!', isError: false });
+                setMsg({ text: 'Tutorial will now replay.', isError: false });
               }} 
               className="btn btn-secondary" 
               style={{ justifyContent: 'center' }}

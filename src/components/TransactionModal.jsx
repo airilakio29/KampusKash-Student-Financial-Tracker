@@ -83,7 +83,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
 
         <form onSubmit={handleSubmit}>
           {/* Income / Expense Toggle */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <div data-tour="transaction-type" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <button
               type="button"
               className={`btn ${type === 'expense' ? 'btn-danger' : 'btn-secondary'}`}
@@ -123,6 +123,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
                 RM
               </span>
               <input
+                data-tour="transaction-amount"
                 type="number"
                 step="0.01"
                 required
@@ -152,6 +153,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
           <div className="form-group">
             <label className="form-label">Category</label>
             <select
+              data-tour="transaction-category"
               className="form-control"
               value={categoryId}
               onChange={e => setCategoryId(e.target.value)}
@@ -222,7 +224,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
             <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+            <button data-tour="transaction-save" type="submit" className="btn btn-primary" style={{ flex: 1 }}>
               {initialData ? 'Save Changes' : 'Add Transaction'}
             </button>
           </div>

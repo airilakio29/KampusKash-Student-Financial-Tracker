@@ -94,6 +94,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
 
           {/* Quick Add Button */}
           <button
+            data-tour="add-transaction"
             onClick={() => {
               onOpenAddTransaction();
               if (isMobileOpen) setIsMobileOpen(false);
@@ -119,6 +120,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
               return (
                 <button
                   key={item.id}
+                  data-tour={`nav-${item.id}`}
                   onClick={() => {
                     setActiveTab(item.id);
                     if (isMobileOpen) setIsMobileOpen(false);
