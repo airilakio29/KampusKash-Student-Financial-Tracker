@@ -24,27 +24,37 @@ import {
  * 4. Submits with confirmPasswordReset(auth, actionCode, newPassword)
  * 5. Shows success card with redirect to login
  */
-export default function ResetPassword({ onBackToLogin }) {
+export default function ResetPassword({ oobCode: propCode, onBackToLogin }) {
   const publicLogo = `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/');
 
-  // URL action code extraction (search query or hash params)
-  const [actionCode] = useState(() => {
+  // URL action code extraction (prop, search query, or hash params)
+  const extractCode = () => {
+    if (propCode) return propCode;
     try {
       const searchParams = new URLSearchParams(window.location.search);
-      const codeFromSearch = searchParams.get('oobCode');
+      const codeFromSearch = searchParams.get('oobCode') || searchParams.get('code');
       if (codeFromSearch) return codeFromSearch;
 
-      const hashParts = window.location.hash.split('?');
-      if (hashParts[1]) {
-        const hashParams = new URLSearchParams(hashParts[1]);
-        const codeFromHash = hashParams.get('oobCode');
-        if (codeFromHash) return codeFromHash;
+      if (window.location.hash) {
+        const match = window.location.hash.match(/[?&#](?:oobCode|code)=([^&#]+)/);
+        if (match && match[1]) {
+          return decodeURIComponent(match[1]);
+        }
       }
     } catch {
       // Fallback
     }
     return '';
-  });
+  };
+
+  const [actionCode, setActionCode] = useState(extractCode);
+
+  useEffect(() => {
+    const code = propCode || extractCode();
+    if (code && code !== actionCode) {
+      setActionCode(code);
+    }
+  }, [propCode]);
 
   const [status, setStatus] = useState('verifying'); // 'verifying' | 'ready' | 'submitting' | 'success' | 'error'
   const [targetEmail, setTargetEmail] = useState('');
@@ -67,7 +77,7 @@ export default function ResetPassword({ onBackToLogin }) {
       if (!code) {
         if (isMounted) {
           setStatus('error');
-          setErrorMessage('No password reset code detected. Please use the reset link sent to your university email.');
+          setErrorMessage('This password reset link is invalid, expired, or missing. Please request a new link from the login page.');
         }
         return;
       }
@@ -90,7 +100,7 @@ export default function ResetPassword({ onBackToLogin }) {
           } else if (codeStr.includes('expired-action-code')) {
             setErrorMessage('This password reset link has expired. Please request a new password reset link.');
           } else {
-            setErrorMessage(result.error || 'Failed to verify reset link. Please request a new one.');
+            setErrorMessage(result.error || 'This password reset link has expired or is invalid. Please request a new link.');
           }
         }
       } catch (err) {
@@ -117,6 +127,13 @@ export default function ResetPassword({ onBackToLogin }) {
       return;
     }
 
+    const hasLetter = /[a-zA-Z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    if (!hasLetter || !hasNumber) {
+      setFormError('Password must contain both letters and numbers.');
+      return;
+    }
+
     if (newPassword !== confirmPasswordVal) {
       setFormError('Passwords do not match. Please re-enter them carefully.');
       return;
@@ -131,7 +148,7 @@ export default function ResetPassword({ onBackToLogin }) {
         setStatus('ready');
         const codeStr = res.code || res.error || '';
         if (codeStr.includes('weak-password')) {
-          setFormError('Password is too weak. Please include at least 6 characters.');
+          setFormError('Password is too weak. Please include letters and numbers with at least 6 characters.');
         } else if (codeStr.includes('expired-action-code') || codeStr.includes('invalid-action-code')) {
           setStatus('error');
           setErrorMessage('This reset code is no longer valid. Please request a new link.');
@@ -147,9 +164,9 @@ export default function ResetPassword({ onBackToLogin }) {
 
   const cleanUrlAndGoToLogin = () => {
     try {
-      // Clean query parameters from URL so reset code is stripped
-      const cleanPath = window.location.pathname.replace(/\/reset-password\/?/i, '/') || '/';
-      window.history.replaceState({}, document.title, cleanPath);
+      const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+      const loginPath = `${basePath}/login`;
+      window.history.replaceState({}, document.title, loginPath);
     } catch {
       // Ignore URL manipulation failures
     }
@@ -493,6 +510,47 @@ export default function ResetPassword({ onBackToLogin }) {
                 >
                   {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
+              </div>
+            </div>
+
+            {/* Live Password Checklist */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.35rem',
+              marginBottom: '1.25rem',
+              padding: '0.65rem 0.85rem',
+              background: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              fontSize: '0.78rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                color: newPassword.length >= 6 ? '#34D399' : 'var(--text-muted, #C4B5D4)'
+              }}>
+                <CheckCircle2 size={13} style={{ opacity: newPassword.length >= 6 ? 1 : 0.4 }} />
+                <span>At least 6 characters</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                color: (/[a-zA-Z]/.test(newPassword) && /[0-9]/.test(newPassword)) ? '#34D399' : 'var(--text-muted, #C4B5D4)'
+              }}>
+                <CheckCircle2 size={13} style={{ opacity: (/[a-zA-Z]/.test(newPassword) && /[0-9]/.test(newPassword)) ? 1 : 0.4 }} />
+                <span>Contains letters and numbers</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                color: (confirmPasswordVal && newPassword === confirmPasswordVal) ? '#34D399' : 'var(--text-muted, #C4B5D4)'
+              }}>
+                <CheckCircle2 size={13} style={{ opacity: (confirmPasswordVal && newPassword === confirmPasswordVal) ? 1 : 0.4 }} />
+                <span>Passwords match</span>
               </div>
             </div>
 

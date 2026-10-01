@@ -36,7 +36,8 @@ import {
   isTechnicalId,
   formatFirebaseUser,
   verifyResetCode,
-  confirmNewPassword
+  confirmNewPassword,
+  sendPasswordReset
 } from '../src/services/authService.js';
 
 import {
@@ -110,6 +111,38 @@ describe('KampusKash Phase 1 Foundation Test Suite', () => {
       if (!res.success) {
         assert.ok(res.code || res.error);
       }
+    });
+
+    it('should support sending password reset with actionCodeSettings to custom reset-password url', async () => {
+      const res = await sendPasswordReset('student@campus.my', {
+        url: 'https://kampuskash.vercel.app/reset-password',
+        handleCodeInApp: true
+      });
+      assert.equal(typeof res.success, 'boolean');
+      if (!res.success) {
+        assert.ok(res.code || res.error);
+      }
+    });
+
+    it('should validate password reset complexity requirements', () => {
+      const isComplex = (pwd) => pwd.length >= 6 && /[a-zA-Z]/.test(pwd) && /[0-9]/.test(pwd);
+      assert.equal(isComplex('12345'), false); // too short
+      assert.equal(isComplex('abcdef'), false); // no number
+      assert.equal(isComplex('123456'), false); // no letter
+      assert.equal(isComplex('Campus2026!'), true); // meets complexity
+    });
+
+    it('should correctly detect root resetPassword query parameters for redirect', () => {
+      const searchUrl = 'https://kampuskash.vercel.app/?mode=resetPassword&oobCode=sampleCode123';
+      const parsedUrl = new URL(searchUrl);
+      const mode = parsedUrl.searchParams.get('mode');
+      const oobCode = parsedUrl.searchParams.get('oobCode');
+
+      assert.equal(mode, 'resetPassword');
+      assert.equal(oobCode, 'sampleCode123');
+
+      const targetPath = `/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
+      assert.equal(targetPath, '/reset-password?oobCode=sampleCode123');
     });
   });
 

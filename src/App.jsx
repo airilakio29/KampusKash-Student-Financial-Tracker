@@ -313,16 +313,51 @@ function FirebaseSetupNotice() {
   );
 }
 
+/**
+ * Root Redirect Fallback:
+ * If query parameters mode === 'resetPassword' and oobCode are detected at the root URL
+ * (e.g. https://kampuskash.vercel.app/?mode=resetPassword&oobCode=...),
+ * automatically redirect the user to /reset-password?oobCode=${oobCode}
+ * without rendering the default landing page.
+ */
+function handleRootResetRedirect() {
+  try {
+    if (typeof window === 'undefined') return false;
+    const searchParams = new URLSearchParams(window.location.search);
+    const mode = searchParams.get('mode');
+    const oobCode = searchParams.get('oobCode');
+    const pathname = window.location.pathname.toLowerCase();
+
+    if ((mode === 'resetPassword' || oobCode) && oobCode) {
+      if (!pathname.includes('/reset-password')) {
+        const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+        const targetUrl = `${basePath}/reset-password?${searchParams.toString()}`;
+        window.history.replaceState({ fromRootRedirect: true }, document.title, targetUrl);
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to perform root resetPassword redirect:', err);
+  }
+  return false;
+}
+
+// Perform root redirect synchronously on evaluation
+handleRootResetRedirect();
+
 function checkPasswordResetRoute() {
   try {
+    if (typeof window === 'undefined') return false;
     const pathname = window.location.pathname.toLowerCase();
     const searchParams = new URLSearchParams(window.location.search);
     const mode = searchParams.get('mode');
     const oobCode = searchParams.get('oobCode');
 
+    // Dedicated /reset-password route
     if (pathname.includes('/reset-password') || pathname.endsWith('reset-password')) {
       return true;
     }
+    // Action code query parameters
     if (mode === 'resetPassword' || Boolean(oobCode)) {
       return true;
     }
@@ -338,12 +373,31 @@ function checkPasswordResetRoute() {
 
 function AppAuthenticator() {
   const { user, isAuthenticated, isFirebaseConfigured } = useAuth();
-  const [inResetFlow, setInResetFlow] = useState(checkPasswordResetRoute);
+  const [inResetFlow, setInResetFlow] = useState(() => {
+    handleRootResetRedirect();
+    return checkPasswordResetRoute();
+  });
+  const [authInitialMode, setAuthInitialMode] = useState(() => {
+    try {
+      const pathname = window.location.pathname.toLowerCase();
+      if (pathname.includes('/login') || pathname.endsWith('login')) return 'login';
+    } catch {
+      // Fallback
+    }
+    return 'signup';
+  });
 
-  // Synchronize on URL changes / back-forward navigation
+  // Synchronize on URL changes / back-forward navigation & root redirect
   useEffect(() => {
+    handleRootResetRedirect();
+
     const handleUrlChange = () => {
+      handleRootResetRedirect();
       setInResetFlow(checkPasswordResetRoute());
+      const path = window.location.pathname.toLowerCase();
+      if (path.includes('/login')) {
+        setAuthInitialMode('login');
+      }
     };
     window.addEventListener('popstate', handleUrlChange);
     window.addEventListener('hashchange', handleUrlChange);
@@ -353,16 +407,43 @@ function AppAuthenticator() {
     };
   }, []);
 
+  const handleBackToLogin = () => {
+    setInResetFlow(false);
+    setAuthInitialMode('login');
+    try {
+      const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+      const loginUrl = `${basePath}/login`;
+      window.history.replaceState(null, document.title, loginUrl);
+    } catch {
+      // Fallback
+    }
+  };
+
   if (!isFirebaseConfigured) {
     return <FirebaseSetupNotice />;
   }
 
   // Custom Password Reset Page for Firebase Action Emails or /reset-password
   if (inResetFlow) {
+    const oobCode = (() => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('oobCode') || searchParams.get('code');
+        if (code) return code;
+        if (window.location.hash) {
+          const match = window.location.hash.match(/[?&#](?:oobCode|code)=([^&#]+)/);
+          if (match && match[1]) return decodeURIComponent(match[1]);
+        }
+      } catch {
+        // Fallback
+      }
+      return '';
+    })();
+
     return (
       <>
         <GlitterBackground />
-        <ResetPassword onBackToLogin={() => setInResetFlow(false)} />
+        <ResetPassword oobCode={oobCode} onBackToLogin={handleBackToLogin} />
       </>
     );
   }
@@ -371,7 +452,7 @@ function AppAuthenticator() {
     return (
       <>
         <GlitterBackground />
-        <Auth />
+        <Auth initialMode={authInitialMode} />
       </>
     );
   }
@@ -395,6 +476,10 @@ function AppWithLoader() {
 }
 
 export default function App() {
+  useEffect(() => {
+    handleRootResetRedirect();
+  }, []);
+
   return (
     <AuthProvider>
       <AppWithLoader />

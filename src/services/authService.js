@@ -121,12 +121,16 @@ export async function loginWithGoogle() {
   }
 }
 
-export async function sendPasswordReset(email) {
+export async function sendPasswordReset(email, customSettings) {
   if (!isFirebaseConfigured || !auth) {
     return { success: false, code: 'auth/not-configured', error: 'Firebase is not configured.' };
   }
   try {
-    await sendPasswordResetEmail(auth, email);
+    const actionCodeSettings = customSettings || {
+      url: 'https://kampuskash.vercel.app/reset-password',
+      handleCodeInApp: true,
+    };
+    await sendPasswordResetEmail(auth, email, actionCodeSettings);
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message, code: error.code };
@@ -156,6 +160,8 @@ export async function confirmNewPassword(actionCode, newPassword) {
     return { success: false, error: error.message, code: error.code };
   }
 }
+
+export { confirmPasswordReset };
 
 export async function logoutUser() {
   if (auth) {

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
-import { Lock, User, LogIn, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle2, ArrowLeft, Mail, Send } from 'lucide-react';
+import { Lock, User, LogIn, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle2, ArrowLeft, Mail, Send, RefreshCw } from 'lucide-react';
 import logoImg from './assets/logo.png';
 
-export default function Auth() {
+export default function Auth({ initialMode }) {
   const { 
     loginWithFirebase, 
     signupWithFirebase, 
@@ -11,8 +11,25 @@ export default function Auth() {
     resetPasswordWithFirebase
   } = useAuth();
 
-  // Open Sign Up / Registration FIRST by default
-  const [mode, setMode] = useState('signup'); // 'signup' | 'login' | 'reset'
+  // Mode initialization: respects initialMode prop or URL path (/login, /signup, etc.)
+  const [mode, setMode] = useState(() => {
+    if (initialMode) return initialMode;
+    try {
+      const pathname = window.location.pathname.toLowerCase();
+      if (pathname.includes('/login') || pathname.endsWith('login')) return 'login';
+      if (pathname.includes('/signup') || pathname.endsWith('signup')) return 'signup';
+      if (pathname.includes('/forgot-password') || pathname.includes('/reset')) return 'reset';
+    } catch {
+      // Fallback
+    }
+    return 'signup';
+  });
+
+  const [prevInitialMode, setPrevInitialMode] = useState(initialMode);
+  if (initialMode && initialMode !== prevInitialMode) {
+    setPrevInitialMode(initialMode);
+    setMode(initialMode);
+  }
   const [emailInput, setEmailInput] = useState('');
   const [displayNameInput, setDisplayNameInput] = useState('');
   const [universityInput, setUniversityInput] = useState('');
@@ -116,16 +133,22 @@ export default function Auth() {
     setError('');
     setSuccess('');
 
-    if (!emailInput.trim() || !emailInput.includes('@')) {
-      setError('Please enter a valid email address for password reset.');
+    const trimmedEmail = emailInput.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail) {
+      setError('Please enter your university or registered student email.');
+      return;
+    }
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Please enter a valid email address (e.g. student@university.edu).');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await resetPasswordWithFirebase(emailInput.trim());
+      const result = await resetPasswordWithFirebase(trimmedEmail);
       if (result.success) {
-        setSuccess('Password reset link sent! Check your email inbox.');
+        setSuccess(`Password reset email sent to ${trimmedEmail}! Check your inbox and click the link to set your new password.`);
       } else {
         setError(result.error ? formatFirebaseError({ message: result.error, code: result.code }) : 'Failed to send reset link.');
       }
@@ -622,116 +645,174 @@ export default function Auth() {
           </form>
         ) : (
           /* Password Reset Mode */
-          <form onSubmit={handlePasswordResetSubmit}>
-            <div style={{
-              background: 'color-mix(in srgb, var(--primary, #8B5CF6) 12%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--primary, #8B5CF6) 25%, transparent)',
-              borderRadius: '10px',
-              padding: '0.85rem 1rem',
-              marginBottom: '1.25rem',
-              fontSize: '0.82rem',
-              color: 'var(--text-muted, #C4B5D4)',
-              lineHeight: 1.5
-            }}>
-              Enter your registered student email address. We will send you an official Firebase password reset link.
-            </div>
-
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
-                Account Email Address
-              </label>
-              <div style={{ position: 'relative' }}>
-                <Mail size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  type="email"
-                  required
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="student@university.edu.my"
+          <div>
+            {success ? (
+              <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: 'rgba(16, 185, 129, 0.18)',
+                  border: '2px solid rgba(16, 185, 129, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1.25rem',
+                  boxShadow: '0 8px 24px rgba(16, 185, 129, 0.25)'
+                }}>
+                  <CheckCircle2 size={32} color="#10B981" />
+                </div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main, #FFFFFF)', margin: '0 0 0.5rem' }}>
+                  Reset Link Dispatched!
+                </h2>
+                <p style={{ fontSize: '0.86rem', color: 'var(--text-muted, #C4B5D4)', lineHeight: 1.55, margin: '0 0 1.5rem' }}>
+                  {success}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
                   style={{
                     width: '100%',
-                    padding: '0.75rem 1rem 0.75rem 2.6rem',
-                    fontSize: '0.9rem',
-                    color: 'var(--text-main)',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    padding: '0.85rem',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    color: '#FFFFFF',
+                    background: 'linear-gradient(135deg, var(--primary, #8B5CF6), var(--primary-hover, #7C3AED))',
+                    border: 'none',
                     borderRadius: '8px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 16px color-mix(in srgb, var(--primary, #8B5CF6) 35%, transparent)'
                   }}
-                />
+                >
+                  <ArrowLeft size={16} /> Return to Log In
+                </button>
               </div>
-            </div>
+            ) : (
+              <form onSubmit={handlePasswordResetSubmit}>
+                <div style={{
+                  background: 'color-mix(in srgb, var(--primary, #8B5CF6) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary, #8B5CF6) 25%, transparent)',
+                  borderRadius: '10px',
+                  padding: '0.85rem 1rem',
+                  marginBottom: '1.25rem',
+                  fontSize: '0.82rem',
+                  color: 'var(--text-muted, #C4B5D4)',
+                  lineHeight: 1.5
+                }}>
+                  Enter your registered student email address. We will send you an official Firebase password reset link with a direct redirect to our custom reset page.
+                </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.8rem',
-                fontSize: '0.95rem',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                background: 'linear-gradient(135deg, var(--primary, #8B5CF6), var(--primary-hover, #7C3AED))',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                marginBottom: '1rem',
-                boxShadow: '0 4px 16px color-mix(in srgb, var(--primary, #8B5CF6) 35%, transparent)'
-              }}
-            >
-              <Send size={16} /> {loading ? 'Sending Link...' : 'Send Reset Link'}
-            </button>
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
+                    Account Email Address
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <Mail size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                      type="email"
+                      required
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="student@university.edu.my"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem 0.75rem 2.6rem',
+                        fontSize: '0.9rem',
+                        color: 'var(--text-main)',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '8px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button
-                type="button"
-                onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
-                style={{
-                  flex: 1,
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  color: 'var(--text-main)',
-                  fontSize: '0.84rem',
-                  fontWeight: 600,
-                  borderRadius: '6px',
-                  padding: '0.6rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.4rem'
-                }}
-              >
-                <ArrowLeft size={14} /> Back to Login
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
-                style={{
-                  flex: 1,
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  color: 'var(--text-main)',
-                  fontSize: '0.84rem',
-                  fontWeight: 600,
-                  borderRadius: '6px',
-                  padding: '0.6rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.4rem'
-                }}
-              >
-                Sign Up Instead
-              </button>
-            </div>
-          </form>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    color: '#FFFFFF',
+                    background: 'linear-gradient(135deg, var(--primary, #8B5CF6), var(--primary-hover, #7C3AED))',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '1rem',
+                    boxShadow: '0 4px 16px color-mix(in srgb, var(--primary, #8B5CF6) 35%, transparent)',
+                    opacity: loading ? 0.75 : 1
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin" /> Sending Reset Link...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} /> Send Reset Link
+                    </>
+                  )}
+                </button>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: 'var(--text-main)',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      padding: '0.6rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    <ArrowLeft size={14} /> Back to Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: 'var(--text-main)',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      padding: '0.6rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    Sign Up Instead
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
       </div>
