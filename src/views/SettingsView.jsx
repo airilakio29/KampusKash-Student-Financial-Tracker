@@ -2,20 +2,19 @@ import React, { useRef, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import { PRESET_THEMES, loadSavedTheme, saveTheme } from '../utils/themeEngine';
-import { 
-  PlusCircle, 
-  Trash2, 
-  Download, 
-  Upload, 
-  RotateCcw, 
-  CheckCircle2, 
+import {
+  PlusCircle,
+  Trash2,
+  Download,
+  Upload,
+  RotateCcw,
+  CheckCircle2,
   AlertTriangle,
   Palette,
   Sparkles,
   Check,
   BookOpen
 } from 'lucide-react';
-import { resetTutorial } from '../components/Tutorial';
 
 const getHexFromToken = (tokenValue) => {
   if (!tokenValue) return '#000000';
@@ -38,12 +37,11 @@ const getPresetColors = (presetId) => {
 };
 
 export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
-  const { 
-    categories, 
-    deleteCategory, 
-    exportJSONBackup, 
-    importJSONBackup, 
-    resetToSampleData,
+  const {
+    categories,
+    deleteCategory,
+    exportJSONBackup,
+    importJSONBackup,
     resetTutorial: resetFinanceTutorial
   } = useFinance();
   const { user } = useAuth();
@@ -53,10 +51,16 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
 
   const [activeThemeConfig, setActiveThemeConfig] = useState(() => loadSavedTheme());
   const [customColors, setCustomColors] = useState(() => activeThemeConfig.customColors || getPresetColors(activeThemeConfig.presetId));
-  const [useCustomColors, setUseCustomColors] = useState(() => Boolean(activeThemeConfig.customColors));
+
+  // Derive a clean display name
+  const displayName = (() => {
+    const name = user?.username;
+    if (!name) return 'Student';
+    if (/^[a-f0-9]{20,}$/i.test(name.replace(/[\s-]/g, ''))) return 'Student';
+    return name;
+  })();
 
   const handleSelectPreset = (presetId) => {
-    // When a preset is selected, reset custom colors to that preset's defaults
     const newConfig = { presetId, customColors: null };
     setActiveThemeConfig(newConfig);
     saveTheme(newConfig);
@@ -111,7 +115,7 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
           Settings & Customization
         </h3>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          Logged in as <strong>{user?.username}</strong> ({user?.email || 'Local User'}). Customize theme appearance, manage categories, or export backups.
+          Logged in as <strong>{displayName}</strong> ({user?.email || 'Local User'}). Customize theme appearance, manage categories, or export backups.
         </p>
       </div>
 
@@ -133,7 +137,7 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
         </div>
       )}
 
-      {/* PHASE 2: CUSTOMIZABLE THEME & APPEARANCE SECTION */}
+      {/* Theme & Appearance Section */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-title" style={{ marginBottom: '1rem' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -144,7 +148,7 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
           </button>
         </div>
 
-        {/* 9 Preset Theme Cards Grid */}
+        {/* Preset Theme Cards Grid */}
         <div data-tour="theme-selector" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -157,6 +161,10 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
               <div
                 key={preset.id}
                 onClick={() => handleSelectPreset(preset.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelectPreset(preset.id); }}
+                aria-label={`Select ${preset.name} theme`}
                 style={{
                   padding: '0.85rem',
                   borderRadius: 'var(--radius-md)',
@@ -219,65 +227,26 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-                Primary Accent
-              </label>
-              <input
-                type="color"
-                value={customColors.primary}
-                onChange={e => handleCustomColorChange('primary', e.target.value)}
-                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-                Background Tone
-              </label>
-              <input
-                type="color"
-                value={customColors.bgApp}
-                onChange={e => handleCustomColorChange('bgApp', e.target.value)}
-                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-                Card Tone
-              </label>
-              <input
-                type="color"
-                value={customColors.bgCard}
-                onChange={e => handleCustomColorChange('bgCard', e.target.value)}
-                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-                Income Accent
-              </label>
-              <input
-                type="color"
-                value={customColors.income}
-                onChange={e => handleCustomColorChange('income', e.target.value)}
-                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-                Expense Accent
-              </label>
-              <input
-                type="color"
-                value={customColors.expense}
-                onChange={e => handleCustomColorChange('expense', e.target.value)}
-                style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              />
-            </div>
+            {[
+              { key: 'primary', label: 'Primary Accent' },
+              { key: 'bgApp', label: 'Background Tone' },
+              { key: 'bgCard', label: 'Card Tone' },
+              { key: 'income', label: 'Income Accent' },
+              { key: 'expense', label: 'Expense Accent' }
+            ].map(item => (
+              <div key={item.key}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                  {item.label}
+                </label>
+                <input
+                  type="color"
+                  value={customColors[item.key]}
+                  onChange={e => handleCustomColorChange(item.key, e.target.value)}
+                  style={{ width: '100%', height: '34px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  aria-label={item.label}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -294,8 +263,8 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: '350px', overflowY: 'auto' }}>
             {categories.map(cat => (
-              <div 
-                key={cat.id} 
+              <div
+                key={cat.id}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -311,7 +280,8 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
                     width: '12px',
                     height: '12px',
                     borderRadius: '50%',
-                    backgroundColor: cat.color
+                    backgroundColor: cat.color,
+                    flexShrink: 0
                   }} />
                   <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{cat.name}</span>
                   <span className={`badge ${cat.type === 'income' ? 'badge-income' : 'badge-expense'}`} style={{ fontSize: '0.7rem' }}>
@@ -324,6 +294,7 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
                   className="btn btn-danger btn-icon"
                   style={{ width: '28px', height: '28px' }}
                   title="Delete category"
+                  aria-label={`Delete ${cat.name}`}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -355,9 +326,9 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
               style={{ display: 'none' }}
             />
 
-            <button 
-              onClick={() => fileInputRef.current?.click()} 
-              className="btn btn-secondary" 
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="btn btn-secondary"
               style={{ justifyContent: 'center' }}
             >
               <Upload size={16} /> Import / Restore JSON Backup
@@ -365,30 +336,14 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
 
             <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '0.5rem 0' }} />
 
-            <button 
-              onClick={() => {
-                if (window.confirm('Reset all financial data to default sample dataset?')) {
-                  resetToSampleData();
-                  setMsg({ text: 'Data reset to initial sample set.', isError: false });
-                }
-              }} 
-              className="btn btn-danger" 
-              style={{ justifyContent: 'center' }}
-            >
-              <RotateCcw size={16} /> Hard Reset Sample Data
-            </button>
-
-            <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '0.5rem 0' }} />
-
-            <button 
+            <button
               data-tour="replay-tutorial-btn"
               onClick={() => {
-                resetFinanceTutorial();
-                resetTutorial();
+                if (resetFinanceTutorial) resetFinanceTutorial();
                 if (onReplayTutorial) onReplayTutorial();
                 setMsg({ text: 'Tutorial will now replay.', isError: false });
-              }} 
-              className="btn btn-secondary" 
+              }}
+              className="btn btn-secondary"
               style={{ justifyContent: 'center' }}
             >
               <BookOpen size={16} /> Replay Tutorial

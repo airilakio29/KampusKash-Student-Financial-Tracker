@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 
 /**
- * Direct Category Spending Pie Chart component built with SVG.
+ * Direct Category Spending Pie/Donut Chart component built with SVG.
  * Renders an uncluttered, modern pie chart with interactive slices,
  * legend, and real-time expense calculations in RM.
+ * 
+ * Bulletproof rendering:
+ * - 0 categories: Clean empty state message
+ * - 1 category: Visible 100% donut ring (uses evenodd two-arc path)
+ * - 2+ categories: Proportional arc segments
  */
 export default function PieChart({ data = [] }) {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
-  const totalSpent = data.reduce((sum, item) => sum + item.amount, 0);
+  const totalSpent = data.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
   if (!data || data.length === 0 || totalSpent === 0) {
     return (
@@ -19,22 +24,45 @@ export default function PieChart({ data = [] }) {
     );
   }
 
-  // Calculate SVG arc paths without mutating variables outside reducer
-  const { slices } = data.reduce(
-    (acc, item, index) => {
-      const percentage = item.amount / totalSpent;
-      const angle = percentage === 1 ? 359.99 : percentage * 360;
-      const startAngle = acc.currentAngle;
+  const cx = 110;
+  const cy = 110;
+  const radius = 90;
+  const innerRadius = 50; // Donut hole
+
+  let slices = [];
+
+  if (data.length === 1) {
+    // Single category: guaranteed 100% visible donut ring via evenodd fill
+    const item = data[0];
+    const fullDonutPath = [
+      `M ${cx} ${cy - radius}`,
+      `A ${radius} ${radius} 0 1 1 ${cx} ${cy + radius}`,
+      `A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius}`,
+      'Z',
+      `M ${cx} ${cy - innerRadius}`,
+      `A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy + innerRadius}`,
+      `A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy - innerRadius}`,
+      'Z'
+    ].join(' ');
+
+    slices = [{
+      ...item,
+      percentage: '100.0',
+      pathData: fullDonutPath,
+      color: item.color || '#52B788',
+      index: 0
+    }];
+  } else {
+    // 2+ categories: proportional slices
+    let currentAngle = 0;
+    slices = data.map((item, index) => {
+      const percentage = (Number(item.amount) || 0) / totalSpent;
+      const angle = percentage * 360;
+      const startAngle = currentAngle;
       const endAngle = startAngle + angle;
 
-      // Convert angles to SVG arc coordinates
       const startRad = (startAngle - 90) * (Math.PI / 180);
       const endRad = (endAngle - 90) * (Math.PI / 180);
-
-      const radius = 90;
-      const innerRadius = 50; // Donut hole for modern visual style
-      const cx = 110;
-      const cy = 110;
 
       const x1 = cx + radius * Math.cos(startRad);
       const y1 = cy + radius * Math.sin(startRad);
@@ -56,19 +84,17 @@ export default function PieChart({ data = [] }) {
         'Z'
       ].join(' ');
 
-      acc.slices.push({
+      currentAngle = endAngle;
+
+      return {
         ...item,
         percentage: (percentage * 100).toFixed(1),
         pathData,
         color: item.color || '#52B788',
         index
-      });
-
-      acc.currentAngle = endAngle;
-      return acc;
-    },
-    { slices: [], currentAngle: 0 }
-  );
+      };
+    });
+  }
 
   const activeItem = hoveredIndex !== null ? slices[hoveredIndex] : null;
 
@@ -80,9 +106,10 @@ export default function PieChart({ data = [] }) {
             const isHovered = hoveredIndex === slice.index;
             return (
               <path
-                key={slice.id}
+                key={slice.id || slice.index}
                 d={slice.pathData}
                 fill={slice.color}
+                fillRule="evenodd"
                 opacity={hoveredIndex === null || isHovered ? 1 : 0.4}
                 style={{
                   transition: 'all 0.25s ease',
@@ -121,7 +148,7 @@ export default function PieChart({ data = [] }) {
       }}>
         {slices.map((item) => (
           <div
-            key={item.id}
+            key={item.id || item.index}
             onMouseEnter={() => setHoveredIndex(item.index)}
             onMouseLeave={() => setHoveredIndex(null)}
             style={{

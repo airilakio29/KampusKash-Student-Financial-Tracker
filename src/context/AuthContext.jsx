@@ -1,17 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { 
   auth, 
-  googleProvider, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signInWithPopup, 
-  signOut as firebaseSignOut, 
   onAuthStateChanged,
-  updateProfile,
-  sendPasswordResetEmail,
   isFirebaseConfigured
 } from '../firebase';
 import { loadSavedTheme } from '../utils/themeEngine';
+import {
+  formatFirebaseUser,
+  loginWithEmail,
+  registerWithEmail,
+  loginWithGoogle as authLoginWithGoogle,
+  sendPasswordReset,
+  logoutUser
+} from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -19,25 +20,6 @@ const STORAGE_KEY_USER = 'student_tracker_user';
 const LEGACY_KEYS = [
   'student_tracker_auth_state'
 ];
-
-const formatFirebaseUser = (fbUser, overrides = {}) => {
-  let name = fbUser.displayName;
-  if (!name || name === fbUser.uid || name.length > 25) {
-    name = fbUser.email ? fbUser.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ') : 'Student';
-  }
-  name = name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').trim();
-
-  return {
-    id: fbUser.uid,
-    username: name || 'Student',
-    email: fbUser.email || '',
-    university: 'Campus Student',
-    avatar: fbUser.photoURL || '🎓',
-    isFirebaseUser: true,
-    currency: 'RM',
-    ...overrides
-  };
-};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -88,67 +70,36 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   const loginWithFirebase = async (email, password) => {
-    if (!auth) return { success: false, code: 'auth/not-configured', error: 'Firebase is not configured.' };
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const formattedUser = formatFirebaseUser(userCredential.user);
-      setUser(formattedUser);
-      return { success: true, user: formattedUser };
-    } catch (error) {
-      return { success: false, error: error.message, code: error.code };
+    const res = await loginWithEmail(email, password);
+    if (res.success) {
+      setUser(res.user);
     }
+    return res;
   };
 
   const signupWithFirebase = async (email, password, displayName, university) => {
-    if (!auth) return { success: false, code: 'auth/not-configured', error: 'Firebase is not configured.' };
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const fbUser = userCredential.user;
-      if (displayName) {
-        await updateProfile(fbUser, { displayName });
-      }
-      const formattedUser = formatFirebaseUser(fbUser, {
-        username: displayName || email.split('@')[0],
-        university: university || 'Campus Student'
-      });
-      setUser(formattedUser);
-      return { success: true, user: formattedUser };
-    } catch (error) {
-      return { success: false, error: error.message, code: error.code };
+    const res = await registerWithEmail(email, password, displayName, university);
+    if (res.success) {
+      setUser(res.user);
     }
+    return res;
   };
 
   const loginWithGoogle = async () => {
-    if (!auth || !googleProvider) {
-      return { success: false, code: 'auth/not-configured', error: 'Firebase is not configured.' };
+    const res = await authLoginWithGoogle();
+    if (res.success) {
+      setUser(res.user);
     }
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const formattedUser = formatFirebaseUser(result.user, {
-        username: result.user.displayName || 'Google Student',
-        university: 'Google Auth Student',
-        avatar: result.user.photoURL || '🌐'
-      });
-      setUser(formattedUser);
-      return { success: true, user: formattedUser };
-    } catch (error) {
-      return { success: false, error: error.message, code: error.code };
-    }
+    return res;
   };
 
   const resetPasswordWithFirebase = async (email) => {
-    if (!auth) return { success: false, code: 'auth/not-configured', error: 'Firebase is not configured.' };
-    try {
-      await sendPasswordResetEmail(auth, email);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message, code: error.code };
-    }
+    return await sendPasswordReset(email);
   };
 
   const logout = async () => {
     try {
-      if (auth) await firebaseSignOut(auth);
+      await logoutUser();
     } catch (e) {
       console.error('Firebase signout failed', e);
     }

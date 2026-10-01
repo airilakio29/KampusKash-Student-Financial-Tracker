@@ -1,29 +1,33 @@
 import React from 'react';
 import { useFinance } from '../context/FinanceContext';
+import { ACCOUNT_TYPE_ICONS } from '../services/accountService';
 import PieChart from '../components/PieChart';
-import { 
-  Wallet, 
-  TrendingUp, 
-  TrendingDown, 
-  PiggyBank, 
-  PlusCircle, 
-  AlertTriangle, 
-  ArrowUpRight, 
+import {
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  PiggyBank,
+  PlusCircle,
+  AlertTriangle,
+  ArrowUpRight,
   ArrowDownRight,
-  Target
+  Target,
+  Landmark
 } from 'lucide-react';
 
-export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, onOpenAddSavings }) {
-  const { 
-    totalBalance, 
-    totalIncome, 
-    totalExpense, 
-    totalSavedInGoals, 
+export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, onOpenAddSavings, onOpenAddAccount }) {
+  const {
+    totalBalance,
+    totalIncome,
+    totalExpense,
+    totalSavedInGoals,
+    totalAccountBalance,
     categorySpendingBreakdown,
     transactions,
     categories,
     budgets,
-    savingsGoals
+    savingsGoals,
+    accounts
   } = useFinance();
 
   const recentTransactions = transactions.slice(0, 5);
@@ -37,9 +41,12 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
     return sum + catSpent;
   }, 0);
 
-  const overallBudgetHealthPct = totalBudgetedLimit > 0 
-    ? Math.min(100, (totalBudgetedSpent / totalBudgetedLimit) * 100).toFixed(1) 
+  const overallBudgetHealthPct = totalBudgetedLimit > 0
+    ? Math.min(100, (totalBudgetedSpent / totalBudgetedLimit) * 100).toFixed(1)
     : 0;
+
+  // Use account balance if accounts exist, otherwise fall back to transaction-derived balance
+  const displayBalance = accounts.length > 0 ? totalAccountBalance : totalBalance;
 
   return (
     <div>
@@ -51,11 +58,11 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
           </div>
           <div className="metric-info">
             <div className="metric-label">Total Balance</div>
-            <div className="metric-value" style={{ color: totalBalance < 0 ? 'var(--expense)' : 'var(--text-main)' }}>
-              RM {totalBalance.toFixed(2)}
+            <div className="metric-value" style={{ color: displayBalance < 0 ? 'var(--expense)' : 'var(--text-main)' }}>
+              RM {displayBalance.toFixed(2)}
             </div>
             <div className="metric-sub">
-              <span>Current Available Cash</span>
+              <span>{accounts.length > 0 ? `Across ${accounts.length} account${accounts.length !== 1 ? 's' : ''}` : 'Current Available Cash'}</span>
             </div>
           </div>
         </div>
@@ -106,7 +113,55 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
         </div>
       </div>
 
-      {/* Main Dashboard Section: Direct Category Pie Chart + Recent Activity */}
+      {/* Account Breakdown (if accounts exist) */}
+      {accounts.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.75rem' }} data-tour="accounts">
+          <div className="card-title">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Landmark size={18} color="var(--primary)" /> My Accounts
+            </span>
+            <button onClick={onOpenAddAccount} className="btn btn-secondary btn-sm">
+              + Add Account
+            </button>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '0.75rem'
+          }}>
+            {accounts.map(acc => {
+              const icon = ACCOUNT_TYPE_ICONS[acc.accountType] || '📋';
+              return (
+                <div key={acc.accountId} style={{
+                  padding: '0.85rem 1rem',
+                  background: 'var(--bg-card-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{ fontSize: '1.3rem' }}>{icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {acc.accountName}
+                    </div>
+                    <div style={{
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: '1.1rem',
+                      fontWeight: 800,
+                      color: acc.balance >= 0 ? 'var(--text-main)' : 'var(--expense)'
+                    }}>
+                      RM {Number(acc.balance).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Main Dashboard Section: Category Pie Chart + Recent Activity */}
       <div className="grid-dashboard-main">
         {/* Direct Category Spending Pie Chart */}
         <div className="card">
@@ -131,43 +186,37 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
               No transactions yet. Click "+ Add" to log your first income or expense!
             </div>
           ) : (
-            <div className="table-container">
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>Title & Category</th>
-                    <th>Date</th>
-                    <th style={{ textAlign: 'right' }}>Amount (RM)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTransactions.map(t => {
-                    const cat = categories.find(c => c.id === t.categoryId);
-                    const isIncome = t.type === 'income';
-                    return (
-                      <tr key={t.id}>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{t.title}</div>
-                          <span 
-                            className="badge" 
-                            style={{ 
-                              background: `${cat ? cat.color : '#94A3B8'}20`, 
-                              color: cat ? cat.color : '#475569',
-                              marginTop: '0.2rem'
-                            }}
-                          >
-                            {cat ? cat.name : 'Uncategorized'}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{t.date}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: isIncome ? 'var(--income)' : 'var(--expense)' }}>
-                          {isIncome ? '+' : '-'} RM {t.amount.toFixed(2)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {recentTransactions.map(t => {
+                const cat = categories.find(c => c.id === t.categoryId);
+                const isIncome = t.type === 'income';
+                return (
+                  <div key={t.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.65rem 0.85rem',
+                    background: 'var(--bg-card-subtle)',
+                    borderRadius: 'var(--radius-sm)'
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                        {t.date} · {cat ? cat.name : 'Uncategorized'}
+                      </div>
+                    </div>
+                    <div style={{
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      color: isIncome ? 'var(--income)' : 'var(--expense)',
+                      whiteSpace: 'nowrap',
+                      marginLeft: '0.5rem'
+                    }}>
+                      {isIncome ? '+' : '-'} RM {Number(t.amount).toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -196,17 +245,17 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
                 <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
                   Total Spent: <strong>RM {totalBudgetedSpent.toFixed(2)}</strong> of RM {totalBudgetedLimit.toFixed(2)}
                 </span>
-                <span style={{ 
-                  fontSize: '0.88rem', 
-                  fontWeight: 700, 
-                  color: overallBudgetHealthPct > 90 ? 'var(--expense)' : overallBudgetHealthPct > 70 ? 'var(--warning)' : 'var(--primary)' 
+                <span style={{
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  color: overallBudgetHealthPct > 90 ? 'var(--expense)' : overallBudgetHealthPct > 70 ? 'var(--warning)' : 'var(--primary)'
                 }}>
                   {overallBudgetHealthPct}% Spent
                 </span>
               </div>
 
               <div className="progress-bar-bg">
-                <div 
+                <div
                   className={`progress-bar-fill ${overallBudgetHealthPct > 90 ? 'progress-danger' : overallBudgetHealthPct > 70 ? 'progress-warning' : 'progress-safe'}`}
                   style={{ width: `${overallBudgetHealthPct}%` }}
                 />
@@ -250,13 +299,15 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {savingsGoals.slice(0, 2).map(goal => {
-                const pct = Math.min(100, (goal.currentAmount / goal.targetAmount) * 100).toFixed(1);
+                const current = Number(goal.currentAmount || 0);
+                const target = Number(goal.targetAmount || 1);
+                const pct = Math.min(100, (current / target) * 100).toFixed(1);
                 return (
                   <div key={goal.id} style={{ background: 'var(--bg-card-subtle)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                       <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{goal.title}</span>
                       <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
-                        RM {goal.currentAmount.toFixed(2)} / RM {goal.targetAmount.toFixed(2)} ({pct}%)
+                        RM {current.toFixed(2)} / RM {target.toFixed(2)} ({pct}%)
                       </span>
                     </div>
                     <div className="progress-bar-bg" style={{ height: '8px' }}>

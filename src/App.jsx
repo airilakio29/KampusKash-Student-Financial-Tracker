@@ -14,15 +14,18 @@ import DashboardView from './views/DashboardView';
 import TransactionsView from './views/TransactionsView';
 import BudgetsView from './views/BudgetsView';
 import SavingsView from './views/SavingsView';
+import AccountsView from './views/AccountsView';
+import ReportsView from './views/ReportsView';
 import SettingsView from './views/SettingsView';
 
 import TransactionModal from './components/TransactionModal';
 import BudgetModal from './components/BudgetModal';
 import SavingsModal from './components/SavingsModal';
 import CategoryModal from './components/CategoryModal';
+import AccountModal from './components/AccountModal';
 
 function AppContent() {
-  const { tutorialCompleted, completeTutorial } = useFinance();
+  const { tutorialCompleted, completeTutorial, isLoading, loadError } = useFinance();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isReplayingTutorial, setIsReplayingTutorial] = useState(false);
@@ -34,12 +37,17 @@ function AppContent() {
   const [editingTransaction, setEditingTransaction] = useState(null);
 
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
   
   const [isSavingsModalOpen, setIsSavingsModalOpen] = useState(false);
   const [savingsModalMode, setSavingsModalMode] = useState('create');
   const [selectedSavingsGoalId, setSelectedSavingsGoalId] = useState(null);
+  const [editingSavings, setEditingSavings] = useState(null);
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null);
 
   const handleOpenAddTransaction = () => {
     setEditingTransaction(null);
@@ -52,23 +60,48 @@ function AppContent() {
   };
 
   const handleOpenAddBudget = () => {
+    setEditingBudget(null);
+    setIsBudgetModalOpen(true);
+  };
+
+  const handleEditBudget = (budget) => {
+    setEditingBudget(budget);
     setIsBudgetModalOpen(true);
   };
 
   const handleOpenAddSavings = () => {
     setSavingsModalMode('create');
     setSelectedSavingsGoalId(null);
+    setEditingSavings(null);
+    setIsSavingsModalOpen(true);
+  };
+
+  const handleEditSavings = (goal) => {
+    setSavingsModalMode('edit');
+    setSelectedSavingsGoalId(goal.id);
+    setEditingSavings(goal);
     setIsSavingsModalOpen(true);
   };
 
   const handleOpenDepositSavings = (goalId) => {
     setSavingsModalMode('deposit');
     setSelectedSavingsGoalId(goalId);
+    setEditingSavings(null);
     setIsSavingsModalOpen(true);
   };
 
   const handleOpenAddCategory = () => {
     setIsCategoryModalOpen(true);
+  };
+
+  const handleOpenAddAccount = () => {
+    setEditingAccount(null);
+    setIsAccountModalOpen(true);
+  };
+
+  const handleEditAccount = (account) => {
+    setEditingAccount(account);
+    setIsAccountModalOpen(true);
   };
 
   const renderActiveView = () => {
@@ -79,6 +112,7 @@ function AppContent() {
             onOpenAddTransaction={handleOpenAddTransaction}
             onOpenAddBudget={handleOpenAddBudget}
             onOpenAddSavings={handleOpenAddSavings}
+            onOpenAddAccount={handleOpenAddAccount}
           />
         );
       case 'transactions':
@@ -89,14 +123,29 @@ function AppContent() {
           />
         );
       case 'budgets':
-        return <BudgetsView onOpenAddBudget={handleOpenAddBudget} />;
+        return (
+          <BudgetsView
+            onOpenAddBudget={handleOpenAddBudget}
+            onEditBudget={handleEditBudget}
+          />
+        );
       case 'savings':
         return (
           <SavingsView
             onOpenAddSavings={handleOpenAddSavings}
             onOpenDepositSavings={handleOpenDepositSavings}
+            onEditSavings={handleEditSavings}
           />
         );
+      case 'accounts':
+        return (
+          <AccountsView
+            onOpenAddAccount={handleOpenAddAccount}
+            onEditAccount={handleEditAccount}
+          />
+        );
+      case 'reports':
+        return <ReportsView />;
       case 'settings':
         return (
           <SettingsView
@@ -110,6 +159,7 @@ function AppContent() {
             onOpenAddTransaction={handleOpenAddTransaction}
             onOpenAddBudget={handleOpenAddBudget}
             onOpenAddSavings={handleOpenAddSavings}
+            onOpenAddAccount={handleOpenAddAccount}
           />
         );
     }
@@ -121,6 +171,8 @@ function AppContent() {
       case 'transactions': return 'Transaction Records';
       case 'budgets': return 'Category Budgets';
       case 'savings': return 'Student Savings Goals';
+      case 'accounts': return 'My Accounts';
+      case 'reports': return 'Reports & Analytics';
       case 'settings': return 'App Settings & Backup';
       default: return 'Financial Dashboard';
     }
@@ -145,7 +197,36 @@ function AppContent() {
         />
 
         <main className="content-area">
-          {renderActiveView()}
+          {isLoading ? (
+            <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                Loading your finances...
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>
+                Syncing with your account data
+              </div>
+            </div>
+          ) : (
+            <>
+              {loadError && (
+                <div style={{
+                  padding: '0.75rem 1rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--warning-bg)',
+                  color: 'var(--warning)',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  ⚠️ {loadError}
+                </div>
+              )}
+              {renderActiveView()}
+            </>
+          )}
         </main>
       </div>
 
@@ -158,6 +239,7 @@ function AppContent() {
       <BudgetModal
         isOpen={isBudgetModalOpen}
         onClose={() => setIsBudgetModalOpen(false)}
+        initialData={editingBudget}
       />
 
       <SavingsModal
@@ -165,11 +247,18 @@ function AppContent() {
         onClose={() => setIsSavingsModalOpen(false)}
         mode={savingsModalMode}
         goalId={selectedSavingsGoalId}
+        initialData={editingSavings}
       />
 
       <CategoryModal
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
+      />
+
+      <AccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        initialData={editingAccount}
       />
 
       {/* Modern Contextual Product Tour */}

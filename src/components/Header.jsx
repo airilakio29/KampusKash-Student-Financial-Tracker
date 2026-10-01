@@ -7,6 +7,15 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
   const { user, logout } = useAuth();
   const { exportToPDF } = useFinance();
 
+  // Derive a clean display name — never show UID or technical identifiers
+  const displayName = (() => {
+    const name = user?.username;
+    if (!name) return 'Student';
+    // Reject anything that looks like a UID/hash (20+ hex chars)
+    if (/^[a-f0-9]{20,}$/i.test(name.replace(/[\s-]/g, ''))) return 'Student';
+    return name;
+  })();
+
   const todayStr = new Date().toLocaleDateString('en-MY', {
     weekday: 'short',
     year: 'numeric',
@@ -18,7 +27,7 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
     <header style={{
       display: 'flex',
       alignItems: 'center',
-      justify: 'space-between',
+      justifyContent: 'space-between',
       padding: '1.25rem 2rem',
       background: 'color-mix(in srgb, var(--bg-app) 92%, transparent)',
       backdropFilter: 'blur(12px)',
@@ -32,6 +41,7 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
           onClick={onOpenMobileMenu}
           className="btn btn-secondary btn-icon header-mobile-menu"
           style={{ display: 'none' }}
+          aria-label="Open menu"
         >
           <Menu size={20} />
         </button>
@@ -41,7 +51,7 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
             {title}
           </h2>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem' }}>
-            <span>Welcome back, <strong>{user.username}</strong> 👋</span>
+            <span>Welcome back, <strong>{displayName}</strong> 👋</span>
           </div>
         </div>
       </div>
@@ -75,6 +85,7 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
           onClick={logout}
           className="btn btn-secondary btn-sm"
           title="Log Out"
+          aria-label="Log Out"
         >
           <LogOut size={15} />
           <span className="export-text">Log Out</span>
@@ -85,6 +96,7 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
           onClick={() => exportToPDF(user)}
           className="btn btn-secondary btn-sm"
           title="Export PDF"
+          aria-label="Export PDF"
         >
           <FileText size={15} />
           <span className="export-text">Export PDF</span>

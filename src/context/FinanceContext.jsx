@@ -1,7 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { generateFinancialPDF } from '../utils/pdfExport';
 import { useAuth } from './AuthContext';
 import { db, doc, onSnapshot, setDoc } from '../firebase';
+import {
+  calculateTotalIncome,
+  calculateTotalExpenses,
+  calculateCategorySpending
+} from '../services/transactionService';
+import {
+  calculateTotalAccountBalance
+} from '../services/accountService';
+import { setTutorialCompletion } from '../services/settingsService';
 
 const FinanceContext = createContext();
 
@@ -10,6 +19,7 @@ const STORAGE_KEYS = {
   CATEGORIES: 'student_tracker_categories',
   BUDGETS: 'student_tracker_budgets',
   SAVINGS: 'student_tracker_savings',
+  ACCOUNTS: 'student_tracker_accounts',
   TUTORIAL: 'kampuskash_tutorial_completed'
 };
 
@@ -25,13 +35,12 @@ const defaultCategories = [
   { id: 'cat-9', name: 'Entertainment & Leisure', type: 'expense', color: '#6366F1', icon: 'Film' }
 ];
 
-const defaultTransactions = [];
-const defaultBudgets = [];
-const defaultSavings = [];
-
 export function FinanceProvider({ children }) {
   const { user, updateUserProfile } = useAuth();
-  const userId = user.id;
+  const userId = user?.id;
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   // State
   const [categories, setCategories] = useState(() => {
@@ -44,22 +53,29 @@ export function FinanceProvider({ children }) {
   const [transactions, setTransactions] = useState(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEYS.TRANSACTIONS}_${userId}`);
-      return saved ? JSON.parse(saved) : defaultTransactions;
-    } catch { return defaultTransactions; }
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
   const [budgets, setBudgets] = useState(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEYS.BUDGETS}_${userId}`);
-      return saved ? JSON.parse(saved) : defaultBudgets;
-    } catch { return defaultBudgets; }
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
   const [savingsGoals, setSavingsGoals] = useState(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEYS.SAVINGS}_${userId}`);
-      return saved ? JSON.parse(saved) : defaultSavings;
-    } catch { return defaultSavings; }
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [accounts, setAccounts] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEYS.ACCOUNTS}_${userId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
   const [tutorialCompleted, setTutorialCompleted] = useState(() => {
@@ -69,14 +85,26 @@ export function FinanceProvider({ children }) {
     } catch { return false; }
   });
 
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   // Real-time Firestore Sync per User UID
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+    if (!db) {
+      return;
+    }
     const userDocRef = doc(db, 'users', userId);
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      const currentUser = userRef.current;
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data.profile && updateUserProfile) {
-          if (user.username !== data.profile.username || user.university !== data.profile.university) {
+        if (data.profile && updateUserProfile && currentUser) {
+          if (currentUser.username !== data.profile.username || currentUser.university !== data.profile.university) {
             updateUserProfile(data.profile);
           }
         }
@@ -84,6 +112,7 @@ export function FinanceProvider({ children }) {
         if (data.transactions) setTransactions(data.transactions);
         if (data.budgets) setBudgets(data.budgets);
         if (data.savingsGoals) setSavingsGoals(data.savingsGoals);
+        if (Array.isArray(data.accounts)) setAccounts(data.accounts);
         if (typeof data.tutorialCompleted === 'boolean') {
           setTutorialCompleted(data.tutorialCompleted);
           try {
@@ -92,142 +121,232 @@ export function FinanceProvider({ children }) {
             console.error('LocalStorage write error', e);
           }
         }
-      } else {
-        // Initial Seed for New Firestore User - empty transactions, budgets, savings
+      } else if (currentUser) {
+        // Initial Seed for New Firestore User
         setDoc(userDocRef, {
           profile: {
-            username: user.username,
-            email: user.email,
-            university: user.university,
-            currency: user.currency || 'RM'
+            username: currentUser.username,
+            email: currentUser.email,
+            university: currentUser.university,
+            currency: currentUser.currency || 'RM'
           },
           categories: defaultCategories,
           transactions: [],
           budgets: [],
           savingsGoals: [],
+          accounts: [],
           tutorialCompleted: false,
           createdAt: new Date().toISOString()
         }).catch(err => console.warn('Firestore seed warning', err));
       }
+      setIsLoading(false);
+      setLoadError(null);
     }, (err) => {
-      console.warn('Firestore sync listener active in local mode', err);
+      console.warn('Firestore sync listener error', err);
+      setIsLoading(false);
+      setLoadError('Unable to sync with cloud. Your data may not be saved.');
     });
 
     return () => unsubscribe();
+  }, [userId, updateUserProfile]);
+
+  const completeTutorial = useCallback(() => {
+    setTutorialCompleted(true);
+    setTutorialCompletion(userId, true);
   }, [userId]);
 
-  const completeTutorial = () => {
-    setTutorialCompleted(true);
-    try {
-      localStorage.setItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`, 'true');
-    } catch (e) {
-      console.error('LocalStorage write error', e);
-    }
-    if (user?.id) {
-      const userDocRef = doc(db, 'users', userId);
-      setDoc(userDocRef, {
-        tutorialCompleted: true,
-        updatedAt: new Date().toISOString()
-      }, { merge: true }).catch(err => console.warn('Firestore tutorial sync warning', err));
-    }
-  };
-
-  const resetTutorial = () => {
+  const resetTutorial = useCallback(() => {
     setTutorialCompleted(false);
-    try {
-      localStorage.removeItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`);
-    } catch (e) {
-      console.error('LocalStorage write error', e);
-    }
-    if (user?.id) {
-      const userDocRef = doc(db, 'users', userId);
-      setDoc(userDocRef, {
-        tutorialCompleted: false,
-        updatedAt: new Date().toISOString()
-      }, { merge: true }).catch(err => console.warn('Firestore tutorial sync warning', err));
-    }
-  };
+    setTutorialCompletion(userId, false);
+  }, [userId]);
 
   // Helper to sync changes to Firestore & LocalStorage
-  const persistUserData = (newCat = categories, newTx = transactions, newBud = budgets, newSav = savingsGoals) => {
+  const persistUserData = useCallback((
+    newCat = categories,
+    newTx = transactions,
+    newBud = budgets,
+    newSav = savingsGoals,
+    newAcc = accounts
+  ) => {
     try {
       localStorage.setItem(`${STORAGE_KEYS.CATEGORIES}_${userId}`, JSON.stringify(newCat));
       localStorage.setItem(`${STORAGE_KEYS.TRANSACTIONS}_${userId}`, JSON.stringify(newTx));
       localStorage.setItem(`${STORAGE_KEYS.BUDGETS}_${userId}`, JSON.stringify(newBud));
       localStorage.setItem(`${STORAGE_KEYS.SAVINGS}_${userId}`, JSON.stringify(newSav));
+      localStorage.setItem(`${STORAGE_KEYS.ACCOUNTS}_${userId}`, JSON.stringify(newAcc));
     } catch (e) {
       console.error('LocalStorage write error', e);
     }
 
-    if (user?.id) {
+    if (userId && db) {
       const userDocRef = doc(db, 'users', userId);
       setDoc(userDocRef, {
         categories: newCat,
         transactions: newTx,
         budgets: newBud,
         savingsGoals: newSav,
+        accounts: newAcc,
         updatedAt: new Date().toISOString()
       }, { merge: true }).catch(e => console.warn('Firestore sync error', e));
     }
-  };
+  }, [userId, categories, transactions, budgets, savingsGoals, accounts]);
 
-  // Financial Calculations
-  const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  // ==================== Financial Calculations (centralized) ====================
+  const totalIncome = useMemo(() => calculateTotalIncome(transactions), [transactions]);
+  const totalExpense = useMemo(() => calculateTotalExpenses(transactions), [transactions]);
+  const totalBalance = useMemo(() => totalIncome - totalExpense, [totalIncome, totalExpense]);
+  const totalAccountBalance = useMemo(() => calculateTotalAccountBalance(accounts), [accounts]);
 
-  const totalExpense = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalSavedInGoals = useMemo(() =>
+    savingsGoals.reduce((sum, s) => sum + Number(s.currentAmount || 0), 0),
+    [savingsGoals]
+  );
 
-  const totalBalance = totalIncome - totalExpense;
+  const categorySpendingBreakdown = useMemo(() =>
+    calculateCategorySpending(transactions, categories),
+    [transactions, categories]
+  );
 
-  const totalSavedInGoals = savingsGoals
-    .reduce((sum, s) => sum + Number(s.currentAmount || 0), 0);
+  // ==================== Account CRUD ====================
+  const addAccount = useCallback((newAccount) => {
+    const now = new Date().toISOString();
+    const account = {
+      accountId: `acc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      accountName: (newAccount.accountName || '').trim(),
+      institution: (newAccount.institution || '').trim(),
+      accountType: newAccount.accountType || 'savings',
+      balance: Number(newAccount.balance) || 0,
+      currency: newAccount.currency || 'RM',
+      source: 'manual',
+      createdAt: now,
+      updatedAt: now
+    };
+    const updated = [...accounts, account];
+    setAccounts(updated);
+    persistUserData(categories, transactions, budgets, savingsGoals, updated);
+    return account;
+  }, [accounts, categories, transactions, budgets, savingsGoals, persistUserData]);
 
-  // Category breakdown calculation for Pie Chart
-  const categorySpendingBreakdown = categories
-    .filter(cat => cat.type === 'expense')
-    .map(cat => {
-      const spent = transactions
-        .filter(t => t.type === 'expense' && t.categoryId === cat.id)
-        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-      return {
-        id: cat.id,
-        name: cat.name,
-        color: cat.color,
-        amount: spent
-      };
-    })
-    .filter(item => item.amount > 0);
+  const updateAccount = useCallback((accountId, updates) => {
+    const updated = accounts.map(a =>
+      a.accountId === accountId
+        ? { ...a, ...updates, balance: Number(updates.balance ?? a.balance), updatedAt: new Date().toISOString() }
+        : a
+    );
+    setAccounts(updated);
+    persistUserData(categories, transactions, budgets, savingsGoals, updated);
+  }, [accounts, categories, transactions, budgets, savingsGoals, persistUserData]);
 
-  // Transaction CRUD (supports 'source': 'manual' | 'bank' | 'imported')
-  const addTransaction = (newTx) => {
+  const deleteAccount = useCallback((accountId) => {
+    // When deleting an account, set transactions' accountId to null (don't delete transactions)
+    const updatedTx = transactions.map(t =>
+      t.accountId === accountId ? { ...t, accountId: null } : t
+    );
+    const updatedAccounts = accounts.filter(a => a.accountId !== accountId);
+    setTransactions(updatedTx);
+    setAccounts(updatedAccounts);
+    persistUserData(categories, updatedTx, budgets, savingsGoals, updatedAccounts);
+  }, [accounts, transactions, categories, budgets, savingsGoals, persistUserData]);
+
+  // ==================== Transaction CRUD ====================
+  const addTransaction = useCallback((newTx) => {
     const created = {
       ...newTx,
-      id: `tx-${Date.now()}`,
+      id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       amount: Number(newTx.amount),
-      source: newTx.source || 'manual'
+      accountId: newTx.accountId || null,
+      source: 'manual',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
-    const updated = [created, ...transactions];
-    setTransactions(updated);
-    persistUserData(categories, updated, budgets, savingsGoals);
-  };
 
-  const updateTransaction = (id, updatedTx) => {
-    const updated = transactions.map(t => t.id === id ? { ...t, ...updatedTx, amount: Number(updatedTx.amount) } : t);
-    setTransactions(updated);
-    persistUserData(categories, updated, budgets, savingsGoals);
-  };
+    // Adjust account balance
+    let updatedAccounts = accounts;
+    if (created.accountId) {
+      updatedAccounts = accounts.map(a => {
+        if (a.accountId === created.accountId) {
+          let newBal = Number(a.balance);
+          if (created.type === 'expense') newBal -= created.amount;
+          else if (created.type === 'income') newBal += created.amount;
+          return { ...a, balance: newBal, updatedAt: new Date().toISOString() };
+        }
+        return a;
+      });
+      setAccounts(updatedAccounts);
+    }
 
-  const deleteTransaction = (id) => {
-    const updated = transactions.filter(t => t.id !== id);
-    setTransactions(updated);
-    persistUserData(categories, updated, budgets, savingsGoals);
-  };
+    const updatedTx = [created, ...transactions];
+    setTransactions(updatedTx);
+    persistUserData(categories, updatedTx, budgets, savingsGoals, updatedAccounts);
+  }, [transactions, accounts, categories, budgets, savingsGoals, persistUserData]);
 
-  // Category CRUD
-  const addCategory = (newCat) => {
+  const updateTransaction = useCallback((id, updatedTx) => {
+    const oldTx = transactions.find(t => t.id === id);
+    let updatedAccounts = [...accounts];
+
+    if (oldTx) {
+      // Reverse the old transaction's effect on its account
+      if (oldTx.accountId) {
+        updatedAccounts = updatedAccounts.map(a => {
+          if (a.accountId === oldTx.accountId) {
+            let bal = Number(a.balance);
+            if (oldTx.type === 'expense') bal += Number(oldTx.amount);
+            else if (oldTx.type === 'income') bal -= Number(oldTx.amount);
+            return { ...a, balance: bal, updatedAt: new Date().toISOString() };
+          }
+          return a;
+        });
+      }
+      // Apply the new transaction's effect
+      const newAccountId = updatedTx.accountId || null;
+      if (newAccountId) {
+        updatedAccounts = updatedAccounts.map(a => {
+          if (a.accountId === newAccountId) {
+            let bal = Number(a.balance);
+            if (updatedTx.type === 'expense') bal -= Number(updatedTx.amount);
+            else if (updatedTx.type === 'income') bal += Number(updatedTx.amount);
+            return { ...a, balance: bal, updatedAt: new Date().toISOString() };
+          }
+          return a;
+        });
+      }
+    }
+
+    const updatedList = transactions.map(t =>
+      t.id === id
+        ? { ...t, ...updatedTx, amount: Number(updatedTx.amount), accountId: updatedTx.accountId || null, updatedAt: new Date().toISOString() }
+        : t
+    );
+
+    setAccounts(updatedAccounts);
+    setTransactions(updatedList);
+    persistUserData(categories, updatedList, budgets, savingsGoals, updatedAccounts);
+  }, [transactions, accounts, categories, budgets, savingsGoals, persistUserData]);
+
+  const deleteTransaction = useCallback((id) => {
+    const tx = transactions.find(t => t.id === id);
+    let updatedAccounts = accounts;
+
+    if (tx && tx.accountId) {
+      updatedAccounts = accounts.map(a => {
+        if (a.accountId === tx.accountId) {
+          let bal = Number(a.balance);
+          if (tx.type === 'expense') bal += Number(tx.amount);
+          else if (tx.type === 'income') bal -= Number(tx.amount);
+          return { ...a, balance: bal, updatedAt: new Date().toISOString() };
+        }
+        return a;
+      });
+      setAccounts(updatedAccounts);
+    }
+
+    const updatedTx = transactions.filter(t => t.id !== id);
+    setTransactions(updatedTx);
+    persistUserData(categories, updatedTx, budgets, savingsGoals, updatedAccounts);
+  }, [transactions, accounts, categories, budgets, savingsGoals, persistUserData]);
+
+  // ==================== Category CRUD ====================
+  const addCategory = useCallback((newCat) => {
     const cat = {
       ...newCat,
       id: `cat-${Date.now()}`,
@@ -235,17 +354,17 @@ export function FinanceProvider({ children }) {
     };
     const updated = [...categories, cat];
     setCategories(updated);
-    persistUserData(updated, transactions, budgets, savingsGoals);
-  };
+    persistUserData(updated, transactions, budgets, savingsGoals, accounts);
+  }, [categories, transactions, budgets, savingsGoals, accounts, persistUserData]);
 
-  const deleteCategory = (id) => {
+  const deleteCategory = useCallback((id) => {
     const updated = categories.filter(c => c.id !== id);
     setCategories(updated);
-    persistUserData(updated, transactions, budgets, savingsGoals);
-  };
+    persistUserData(updated, transactions, budgets, savingsGoals, accounts);
+  }, [categories, transactions, budgets, savingsGoals, accounts, persistUserData]);
 
-  // Budget CRUD
-  const upsertBudget = (categoryId, monthlyLimit) => {
+  // ==================== Budget CRUD ====================
+  const upsertBudget = useCallback((categoryId, monthlyLimit) => {
     let updated = [];
     const existingIndex = budgets.findIndex(b => b.categoryId === categoryId);
     if (existingIndex >= 0) {
@@ -255,30 +374,45 @@ export function FinanceProvider({ children }) {
       updated = [...budgets, { id: `b-${Date.now()}`, categoryId, monthlyLimit: Number(monthlyLimit) }];
     }
     setBudgets(updated);
-    persistUserData(categories, transactions, updated, savingsGoals);
-  };
+    persistUserData(categories, transactions, updated, savingsGoals, accounts);
+  }, [budgets, categories, transactions, savingsGoals, accounts, persistUserData]);
 
-  const deleteBudget = (id) => {
+  const deleteBudget = useCallback((id) => {
     const updated = budgets.filter(b => b.id !== id);
     setBudgets(updated);
-    persistUserData(categories, transactions, updated, savingsGoals);
-  };
+    persistUserData(categories, transactions, updated, savingsGoals, accounts);
+  }, [budgets, categories, transactions, savingsGoals, accounts, persistUserData]);
 
-  // Savings Goal CRUD
-  const addSavingsGoal = (newGoal) => {
+  // ==================== Savings Goal CRUD ====================
+  const addSavingsGoal = useCallback((newGoal) => {
     const goal = {
       ...newGoal,
       id: `s-${Date.now()}`,
-      targetAmount: Number(newGoal.targetAmount),
-      currentAmount: Number(newGoal.currentAmount || 0)
+      targetAmount: Math.max(0, Number(newGoal.targetAmount) || 0),
+      currentAmount: Math.max(0, Number(newGoal.currentAmount || 0))
     };
     const updated = [...savingsGoals, goal];
     setSavingsGoals(updated);
-    persistUserData(categories, transactions, budgets, updated);
-  };
+    persistUserData(categories, transactions, budgets, updated, accounts);
+  }, [savingsGoals, categories, transactions, budgets, accounts, persistUserData]);
 
-  const depositToSavingsGoal = (goalId, amount) => {
-    const numAmount = Number(amount);
+  const updateSavingsGoal = useCallback((goalId, updates) => {
+    const updated = savingsGoals.map(g =>
+      g.id === goalId
+        ? {
+          ...g,
+          ...updates,
+          targetAmount: Math.max(0, Number(updates.targetAmount ?? g.targetAmount)),
+          currentAmount: Math.max(0, Number(updates.currentAmount ?? g.currentAmount))
+        }
+        : g
+    );
+    setSavingsGoals(updated);
+    persistUserData(categories, transactions, budgets, updated, accounts);
+  }, [savingsGoals, categories, transactions, budgets, accounts, persistUserData]);
+
+  const depositToSavingsGoal = useCallback((goalId, amount) => {
+    const numAmount = Math.max(0, Number(amount));
     const updatedGoals = savingsGoals.map(g => {
       if (g.id === goalId) {
         return { ...g, currentAmount: g.currentAmount + numAmount };
@@ -291,30 +425,33 @@ export function FinanceProvider({ children }) {
     let updatedTx = transactions;
     if (goal) {
       const depositTx = {
-        id: `tx-${Date.now()}`,
+        id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         date: new Date().toISOString().split('T')[0],
         title: `Savings Deposit: ${goal.title}`,
         amount: numAmount,
         type: 'expense',
         categoryId: 'cat-6',
+        accountId: null,
         isRecurring: false,
         source: 'manual',
-        note: 'Deposit towards savings goal'
+        note: 'Deposit towards savings goal',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       updatedTx = [depositTx, ...transactions];
       setTransactions(updatedTx);
     }
-    persistUserData(categories, updatedTx, budgets, updatedGoals);
-  };
+    persistUserData(categories, updatedTx, budgets, updatedGoals, accounts);
+  }, [savingsGoals, transactions, categories, budgets, accounts, persistUserData]);
 
-  const deleteSavingsGoal = (id) => {
+  const deleteSavingsGoal = useCallback((id) => {
     const updated = savingsGoals.filter(g => g.id !== id);
     setSavingsGoals(updated);
-    persistUserData(categories, transactions, budgets, updated);
-  };
+    persistUserData(categories, transactions, budgets, updated, accounts);
+  }, [savingsGoals, categories, transactions, budgets, accounts, persistUserData]);
 
-  // Data Export to PDF
-  const exportToPDF = (currentUser) => {
+  // ==================== Data Export ====================
+  const exportToPDF = useCallback((currentUser) => {
     generateFinancialPDF({
       transactions,
       categories,
@@ -324,105 +461,137 @@ export function FinanceProvider({ children }) {
       totalSavedInGoals,
       user: currentUser || user
     });
-  };
+  }, [transactions, categories, totalBalance, totalIncome, totalExpense, totalSavedInGoals, user]);
 
-  // Data Export to CSV
-  const exportToCSV = () => {
-    const headers = ['ID', 'Date', 'Type', 'Title', 'Amount (RM)', 'Category', 'Source', 'Recurring', 'Note'];
+  const exportToCSV = useCallback(() => {
+    const headers = ['ID', 'Date', 'Type', 'Title', 'Amount (RM)', 'Category', 'Account', 'Source', 'Recurring', 'Note'];
     const rows = transactions.map(t => {
       const cat = categories.find(c => c.id === t.categoryId);
+      const acc = accounts.find(a => a.accountId === t.accountId);
       return [
         t.id,
         t.date,
         t.type,
-        `"${t.title.replace(/"/g, '""')}"`,
-        t.amount.toFixed(2),
+        `"${(t.title || '').replace(/"/g, '""')}"`,
+        Number(t.amount).toFixed(2),
         `"${cat ? cat.name : 'Uncategorized'}"`,
+        `"${acc ? acc.accountName : 'Unassigned'}"`,
         t.source || 'manual',
         t.isRecurring ? 'Yes' : 'No',
         `"${(t.note || '').replace(/"/g, '""')}"`
       ];
     });
 
-    const csvContent = 'data:text/csv;charset=utf-8,' 
+    const csvContent = 'data:text/csv;charset=utf-8,'
       + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `student_finance_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `kampuskash_transactions_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [transactions, categories, accounts]);
 
-  // Backup & Restore JSON Data
-  const exportJSONBackup = () => {
+  const exportJSONBackup = useCallback(() => {
     const dataBundle = {
-      version: 1,
+      version: 2,
       exportDate: new Date().toISOString(),
-      user: user.username,
+      user: user?.username || 'Student',
       categories,
       transactions,
       budgets,
-      savingsGoals
+      savingsGoals,
+      accounts
     };
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(dataBundle, null, 2))}`;
     const link = document.createElement('a');
     link.setAttribute('href', jsonString);
-    link.setAttribute('download', `student_finance_backup_${new Date().toISOString().split('T')[0]}.json`);
+    link.setAttribute('download', `kampuskash_backup_${new Date().toISOString().split('T')[0]}.json`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [user, categories, transactions, budgets, savingsGoals, accounts]);
 
-  const importJSONBackup = (jsonData) => {
+  const importJSONBackup = useCallback((jsonData) => {
     try {
       const newCat = jsonData.categories || categories;
       const newTx = jsonData.transactions || transactions;
       const newBud = jsonData.budgets || budgets;
       const newSav = jsonData.savingsGoals || savingsGoals;
+      const newAcc = jsonData.accounts || accounts;
       setCategories(newCat);
       setTransactions(newTx);
       setBudgets(newBud);
       setSavingsGoals(newSav);
-      persistUserData(newCat, newTx, newBud, newSav);
+      setAccounts(newAcc);
+      persistUserData(newCat, newTx, newBud, newSav, newAcc);
       return true;
     } catch (err) {
       console.error('Failed to import JSON data', err);
       return false;
     }
-  };
+  }, [categories, transactions, budgets, savingsGoals, accounts, persistUserData]);
+
+  const value = useMemo(() => ({
+    // State
+    categories,
+    transactions,
+    budgets,
+    savingsGoals,
+    accounts,
+    isLoading,
+    loadError,
+    // Computed
+    totalBalance,
+    totalIncome,
+    totalExpense,
+    totalAccountBalance,
+    totalSavedInGoals,
+    categorySpendingBreakdown,
+    // Account CRUD
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    // Transaction CRUD
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    // Category CRUD
+    addCategory,
+    deleteCategory,
+    // Budget CRUD
+    upsertBudget,
+    deleteBudget,
+    // Savings CRUD
+    addSavingsGoal,
+    updateSavingsGoal,
+    depositToSavingsGoal,
+    deleteSavingsGoal,
+    // Export
+    exportToPDF,
+    exportToCSV,
+    exportJSONBackup,
+    importJSONBackup,
+    // Tutorial
+    tutorialCompleted,
+    completeTutorial,
+    resetTutorial
+  }), [
+    categories, transactions, budgets, savingsGoals, accounts, isLoading, loadError,
+    totalBalance, totalIncome, totalExpense, totalAccountBalance, totalSavedInGoals, categorySpendingBreakdown,
+    addAccount, updateAccount, deleteAccount,
+    addTransaction, updateTransaction, deleteTransaction,
+    addCategory, deleteCategory,
+    upsertBudget, deleteBudget,
+    addSavingsGoal, updateSavingsGoal, depositToSavingsGoal, deleteSavingsGoal,
+    exportToPDF, exportToCSV, exportJSONBackup, importJSONBackup,
+    tutorialCompleted, completeTutorial, resetTutorial
+  ]);
 
   return (
-    <FinanceContext.Provider value={{
-      categories,
-      transactions,
-      budgets,
-      savingsGoals,
-      totalBalance,
-      totalIncome,
-      totalExpense,
-      totalSavedInGoals,
-      categorySpendingBreakdown,
-      addTransaction,
-      updateTransaction,
-      deleteTransaction,
-      addCategory,
-      deleteCategory,
-      upsertBudget,
-      deleteBudget,
-      addSavingsGoal,
-      depositToSavingsGoal,
-      deleteSavingsGoal,
-      exportToPDF,
-      exportToCSV,
-      exportJSONBackup,
-      importJSONBackup,
-      tutorialCompleted,
-      completeTutorial,
-      resetTutorial
-    }}>
+    <FinanceContext.Provider value={value}>
       {children}
     </FinanceContext.Provider>
   );

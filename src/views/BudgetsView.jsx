@@ -1,8 +1,9 @@
 import React from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Target, PlusCircle, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { calculateBudgetStatus } from '../services/budgetService';
+import { Target, PlusCircle, Trash2, Edit3, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export default function BudgetsView({ onOpenAddBudget }) {
+export default function BudgetsView({ onOpenAddBudget, onEditBudget }) {
   const { budgets, categories, transactions, deleteBudget } = useFinance();
 
   return (
@@ -14,11 +15,11 @@ export default function BudgetsView({ onOpenAddBudget }) {
               Monthly Category Budgets
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Set spending caps per category to prevent overspending on hostel rent, food, or entertainment.
+              Set spending caps per category to prevent overspending on food, transport, hostel, or entertainment.
             </p>
           </div>
 
-          <button onClick={onOpenAddBudget} className="btn btn-primary">
+          <button data-tour="budgets-add-btn" onClick={onOpenAddBudget} className="btn btn-primary">
             <PlusCircle size={16} /> + Set New Budget
           </button>
         </div>
@@ -45,14 +46,8 @@ export default function BudgetsView({ onOpenAddBudget }) {
         }}>
           {budgets.map(budget => {
             const category = categories.find(c => c.id === budget.categoryId);
-            const spent = transactions
-              .filter(t => t.type === 'expense' && t.categoryId === budget.categoryId)
-              .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-
-            const limit = Number(budget.monthlyLimit);
-            const pct = Math.min(100, (spent / limit) * 100).toFixed(1);
-            const isOver = spent > limit;
-            const isNear = spent >= limit * 0.8 && !isOver;
+            const status = calculateBudgetStatus(budget, transactions);
+            const { spent, limit, remaining, percentage, isOver, isNear } = status;
 
             return (
               <div key={budget.id} className="card" style={{ position: 'relative' }}>
@@ -69,46 +64,69 @@ export default function BudgetsView({ onOpenAddBudget }) {
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => deleteBudget(budget.id)}
-                    className="btn btn-danger btn-icon"
-                    style={{ width: '30px', height: '30px' }}
-                    title="Remove Budget"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    {onEditBudget && (
+                      <button
+                        onClick={() => onEditBudget(budget)}
+                        className="btn btn-secondary btn-icon"
+                        style={{ width: '30px', height: '30px' }}
+                        title="Edit Budget"
+                        aria-label={`Edit ${category?.name || 'Category'} Budget`}
+                      >
+                        <Edit3 size={13} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Remove budget for "${category?.name || 'Category'}"?`)) {
+                          deleteBudget(budget.id);
+                        }
+                      }}
+                      className="btn btn-danger btn-icon"
+                      style={{ width: '30px', height: '30px' }}
+                      title="Remove Budget"
+                      aria-label={`Remove ${category?.name || 'Category'} Budget`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                    <span>Spent: <strong>RM {spent.toFixed(2)}</strong></span>
-                    <span>Cap: <strong>RM {limit.toFixed(2)}</strong></span>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '0.5rem',
+                    fontSize: '0.85rem',
+                    color: 'var(--text-muted)',
+                    marginBottom: '0.5rem'
+                  }}>
+                    <div>Budget: <strong style={{ color: 'var(--text-main)' }}>RM {limit.toFixed(2)}</strong></div>
+                    <div style={{ textAlign: 'right' }}>Spent: <strong style={{ color: isOver ? 'var(--expense)' : 'var(--text-main)' }}>RM {spent.toFixed(2)}</strong></div>
+                    <div>Remaining: <strong style={{ color: isOver ? 'var(--expense)' : 'var(--income)' }}>RM {remaining.toFixed(2)}</strong></div>
+                    <div style={{ textAlign: 'right' }}><strong>{percentage}%</strong> used</div>
                   </div>
 
-                  <div className="progress-bar-bg" style={{ height: '12px' }}>
+                  <div className="progress-bar-bg" style={{ height: '10px' }}>
                     <div 
                       className={`progress-bar-fill ${isOver ? 'progress-danger' : isNear ? 'progress-warning' : 'progress-safe'}`}
-                      style={{ width: `${pct}%` }}
+                      style={{ width: `${Math.min(100, percentage)}%` }}
                     />
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.65rem', borderTop: '1px solid var(--border-light)' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: isOver ? 'var(--expense)' : isNear ? 'var(--warning)' : 'var(--primary)' }}>
-                    {pct}% used
-                  </span>
-
                   {isOver ? (
-                    <span className="badge badge-expense" style={{ fontSize: '0.75rem' }}>
+                    <span className="badge badge-expense" style={{ fontSize: '0.75rem', width: '100%', justifyContent: 'center' }}>
                       <AlertCircle size={12} /> Over budget by RM {(spent - limit).toFixed(2)}
                     </span>
                   ) : isNear ? (
-                    <span className="badge" style={{ background: 'var(--warning-bg)', color: '#B45309', fontSize: '0.75rem' }}>
-                      <AlertCircle size={12} /> 80%+ limit reached
+                    <span className="badge" style={{ background: 'var(--warning-bg)', color: '#B45309', fontSize: '0.75rem', width: '100%', justifyContent: 'center' }}>
+                      <AlertCircle size={12} /> Approaching limit (80%+ used)
                     </span>
                   ) : (
-                    <span className="badge badge-income" style={{ fontSize: '0.75rem' }}>
-                      <CheckCircle2 size={12} /> On track
+                    <span className="badge badge-income" style={{ fontSize: '0.75rem', width: '100%', justifyContent: 'center' }}>
+                      <CheckCircle2 size={12} /> On track (RM {remaining.toFixed(2)} remaining)
                     </span>
                   )}
                 </div>

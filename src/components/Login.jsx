@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Lock, User, LogIn, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
@@ -9,22 +9,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [themeColors, setThemeColors] = useState({});
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const style = getComputedStyle(root);
-    setThemeColors({
-      primary: style.getPropertyValue('--primary').trim() || '#624873',
-      primaryHover: style.getPropertyValue('--primary-hover').trim() || '#4A3657',
-      primaryLight: style.getPropertyValue('--primary-light').trim() || '#E8DEF5',
-      bgApp: style.getPropertyValue('--bg-app').trim() || '#624873',
-      textMain: style.getPropertyValue('--text-main').trim() || '#F3EDF9',
-      textMuted: style.getPropertyValue('--text-muted').trim() || '#C4B5D4',
-      bgCard: style.getPropertyValue('--bg-card').trim() || 'rgba(74, 54, 87, 0.65)',
-      borderLight: style.getPropertyValue('--border-light').trim() || 'rgba(255, 255, 255, 0.12)'
-    });
-  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();

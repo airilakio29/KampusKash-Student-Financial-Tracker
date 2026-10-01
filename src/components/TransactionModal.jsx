@@ -1,19 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { X, Repeat } from 'lucide-react';
 
 export default function TransactionModal({ isOpen, onClose, initialData = null }) {
-  const { categories, addTransaction, updateTransaction } = useFinance();
+  const { categories, accounts, addTransaction, updateTransaction } = useFinance();
 
-  const [type, setType] = useState(initialData ? initialData.type : 'expense');
-  const [title, setTitle] = useState(initialData ? initialData.title : '');
-  const [amount, setAmount] = useState(initialData ? initialData.amount : '');
-  const [categoryId, setCategoryId] = useState(initialData ? initialData.categoryId : '');
-  const [date, setDate] = useState(initialData ? initialData.date : new Date().toISOString().split('T')[0]);
-  const [source, setSource] = useState(initialData ? (initialData.source || 'manual') : 'manual');
-  const [isRecurring, setIsRecurring] = useState(initialData ? initialData.isRecurring : false);
-  const [note, setNote] = useState(initialData ? initialData.note : '');
+  const [type, setType] = useState('expense');
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [accountId, setAccountId] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [note, setNote] = useState('');
   const [error, setError] = useState('');
+
+  // Reset form when modal opens/closes or initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setType(initialData.type || 'expense');
+      setTitle(initialData.title || '');
+      setAmount(initialData.amount != null ? String(initialData.amount) : '');
+      setCategoryId(initialData.categoryId || '');
+      setAccountId(initialData.accountId || '');
+      setDate(initialData.date || new Date().toISOString().split('T')[0]);
+      setIsRecurring(Boolean(initialData.isRecurring));
+      setNote(initialData.note || '');
+    } else {
+      setType('expense');
+      setTitle('');
+      setAmount('');
+      setCategoryId('');
+      setAccountId('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setIsRecurring(false);
+      setNote('');
+    }
+    setError('');
+  }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 
@@ -21,11 +45,14 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
+
     if (!title.trim()) {
       setError('Please enter a transaction title');
       return;
     }
-    if (!amount || Number(amount) <= 0) {
+    const numAmount = Number(amount);
+    if (!numAmount || numAmount <= 0 || isNaN(numAmount) || !isFinite(numAmount)) {
       setError('Please enter a valid amount greater than RM 0');
       return;
     }
@@ -34,14 +61,19 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
       setError('Please select a category');
       return;
     }
+    if (!date) {
+      setError('Please select a date');
+      return;
+    }
 
     const payload = {
       type,
       title: title.trim(),
-      amount: Number(amount),
+      amount: numAmount,
       categoryId: selectedCatId,
+      accountId: accountId || null,
       date,
-      source,
+      source: 'manual',
       isRecurring,
       note: note.trim()
     };
@@ -57,12 +89,12 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h3 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)' }}>
             {initialData ? 'Edit Transaction' : 'Add New Transaction'}
           </h3>
-          <button onClick={onClose} className="btn btn-secondary btn-icon">
+          <button onClick={onClose} className="btn btn-secondary btn-icon" aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -126,6 +158,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
                 data-tour="transaction-amount"
                 type="number"
                 step="0.01"
+                min="0.01"
                 required
                 className="form-control"
                 style={{ paddingLeft: '3.2rem', fontSize: '1.1rem', fontWeight: 700 }}
@@ -146,6 +179,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
               placeholder="e.g. Cafeteria Lunch, PTPTN Loan"
               value={title}
               onChange={e => setTitle(e.target.value)}
+              maxLength={100}
             />
           </div>
 
@@ -167,17 +201,21 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
             </select>
           </div>
 
-          {/* Transaction Source (Architecture for Future Bank Sync) */}
+          {/* Account Dropdown */}
           <div className="form-group">
-            <label className="form-label">Transaction Origin / Source</label>
+            <label className="form-label">Account (Optional)</label>
             <select
+              data-tour="transaction-account"
               className="form-control"
-              value={source}
-              onChange={e => setSource(e.target.value)}
+              value={accountId}
+              onChange={e => setAccountId(e.target.value)}
             >
-              <option value="manual">📝 Manual Entry</option>
-              <option value="bank">💳 Bank Integration Feed (Future Ready)</option>
-              <option value="imported">📁 Imported File / CSV</option>
+              <option value="">No Account (Unassigned)</option>
+              {accounts.map(acc => (
+                <option key={acc.accountId} value={acc.accountId}>
+                  {acc.accountName}{acc.institution ? ` — ${acc.institution}` : ''}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -202,6 +240,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
               placeholder="Add details, receipt reference..."
               value={note}
               onChange={e => setNote(e.target.value)}
+              maxLength={200}
             />
           </div>
 

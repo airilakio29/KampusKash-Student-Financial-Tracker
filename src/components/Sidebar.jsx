@@ -8,7 +8,9 @@ import {
   Settings,
   PlusCircle,
   LogOut,
-  X
+  X,
+  Landmark,
+  BarChart3
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction, isMobileOpen, setIsMobileOpen }) {
@@ -17,10 +19,30 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transactions', label: 'Transactions', icon: ReceiptText },
+    { id: 'accounts', label: 'Accounts', icon: Landmark },
     { id: 'budgets', label: 'Budgets', icon: Target },
     { id: 'savings', label: 'Savings Goals', icon: PiggyBank },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  // Derive a clean display name — never show UID or technical identifiers
+  const displayName = (() => {
+    const name = user?.username;
+    if (!name) return 'Student';
+    // Reject anything that looks like a UID/hash (32+ hex chars)
+    if (/^[a-f0-9]{20,}$/i.test(name.replace(/[\s-]/g, ''))) return 'Student';
+    return name;
+  })();
+
+  const avatarDisplay = (() => {
+    const av = user?.avatar;
+    // If avatar is a URL (photoURL), show initials instead in the small circle
+    if (av && av.startsWith('http')) {
+      return displayName.charAt(0).toUpperCase();
+    }
+    return av || displayName.charAt(0).toUpperCase();
+  })();
 
   return (
     <>
@@ -87,6 +109,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
               onClick={() => setIsMobileOpen(false)}
               className="mobile-close-btn"
               style={{ background: 'transparent', border: 'none', color: '#FFF', display: 'none', cursor: 'pointer' }}
+              aria-label="Close menu"
             >
               <X size={22} />
             </button>
@@ -140,6 +163,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
                     cursor: 'pointer',
                     transition: 'all var(--transition-fast)'
                   }}
+                  aria-label={item.label}
                 >
                   <Icon size={20} color={isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.5)'} />
                   <span>{item.label}</span>
@@ -176,14 +200,14 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
                 fontWeight: 700,
                 fontSize: '1rem'
               }}>
-                {user.avatar || user.username.charAt(0)}
+                {avatarDisplay}
               </div>
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.username}
+                  {displayName}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.university || 'Student'}
+                  {user?.university || 'Student'}
                 </div>
               </div>
             </div>
@@ -192,11 +216,12 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
           <button
             onClick={logout}
             title="Log Out"
+            aria-label="Log Out"
             style={{
               width: '100%',
               display: 'flex',
               alignItems: 'center',
-              justify: 'center',
+              justifyContent: 'center',
               gap: '0.5rem',
               marginTop: '0.75rem',
               padding: '0.6rem',

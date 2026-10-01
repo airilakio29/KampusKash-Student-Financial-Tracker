@@ -12,34 +12,13 @@ import {
   Settings, 
   Palette, 
   DollarSign, 
-  Layers 
+  Layers,
+  Landmark,
+  BarChart3,
+  Wallet
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
-
-const TUTORIAL_STORAGE_PREFIX = 'kampuskash_tutorial_completed';
-
-export function getTutorialStorageKey(userId) {
-  return userId ? `${TUTORIAL_STORAGE_PREFIX}_${userId}` : TUTORIAL_STORAGE_PREFIX;
-}
-
-export function shouldShowTutorial(userId) {
-  try {
-    const key = getTutorialStorageKey(userId);
-    return localStorage.getItem(key) !== 'true';
-  } catch {
-    return true;
-  }
-}
-
-export function resetTutorial(userId) {
-  try {
-    const key = getTutorialStorageKey(userId);
-    localStorage.removeItem(key);
-  } catch (e) {
-    console.error('Failed to reset tutorial in local storage', e);
-  }
-}
 
 const TOUR_STEPS = [
   {
@@ -47,7 +26,7 @@ const TOUR_STEPS = [
     targetSelector: '[data-tour="dashboard-metrics"]',
     tab: 'dashboard',
     title: 'Welcome to KampusKash',
-    description: 'This is your financial dashboard. You can review your balance, track incoming funds, monitor expenses, and check savings progress from here.',
+    description: 'This is your financial dashboard. You can review your total balance, track incoming funds, monitor expenses, and check savings progress from here.',
     icon: LayoutDashboard,
     actionType: 'info',
     preferredPosition: 'bottom'
@@ -103,6 +82,16 @@ const TOUR_STEPS = [
     requiresModal: true
   },
   {
+    id: 'transaction-account',
+    targetSelector: '[data-tour="transaction-account"]',
+    title: 'Choose Account',
+    description: 'Optionally link this transaction to one of your accounts (Maybank, CIMB, Cash, E-Wallet).',
+    icon: Wallet,
+    actionType: 'select',
+    preferredPosition: 'bottom',
+    requiresModal: true
+  },
+  {
     id: 'transaction-save',
     targetSelector: '[data-tour="transaction-save"]',
     title: 'Save Your Entry',
@@ -139,6 +128,26 @@ const TOUR_STEPS = [
     title: 'Savings Goals',
     description: 'Create and monitor progress toward targets like tuition fees, equipment, or travel.',
     icon: PiggyBank,
+    actionType: 'info',
+    preferredPosition: 'right'
+  },
+  {
+    id: 'accounts-nav',
+    targetSelector: '[data-tour="nav-accounts"]',
+    tab: 'dashboard',
+    title: 'Multi-Account Balances',
+    description: 'Track and manage your bank accounts, e-wallets, and cash reserves all in one place.',
+    icon: Landmark,
+    actionType: 'info',
+    preferredPosition: 'right'
+  },
+  {
+    id: 'reports-nav',
+    targetSelector: '[data-tour="nav-reports"]',
+    tab: 'dashboard',
+    title: 'Reports & Analytics',
+    description: 'Analyze your cash flows, monthly trends, and category spending distributions.',
+    icon: BarChart3,
     actionType: 'info',
     preferredPosition: 'right'
   },
@@ -340,7 +349,7 @@ export default function Tutorial({
     left = Math.max(margin, Math.min(left, vw - cardWidth - margin));
     top = Math.max(margin, Math.min(top, vh - cardHeight - margin));
 
-    setCardPlacement({ top, left, placement: chosenPlacement });
+    setCardPlacement({ top, left, placement: chosenPlacement, cardWidth, cardHeight });
   }, [findTargetElement, step.preferredPosition]);
 
   // Scroll target element into view if needed
@@ -457,10 +466,12 @@ export default function Tutorial({
       height: 0,
       borderStyle: 'solid'
     };
+    const cWidth = cardPlacement.cardWidth || 300;
+    const cHeight = cardPlacement.cardHeight || 180;
 
     if (cardPlacement.placement === 'bottom') {
       const targetCenter = targetRect.left + targetRect.width / 2;
-      const relativeLeft = Math.max(16, Math.min(targetCenter - cardPlacement.left, (cardRef.current?.offsetWidth || 300) - 24));
+      const relativeLeft = Math.max(16, Math.min(targetCenter - cardPlacement.left, cWidth - 24));
       return {
         ...base,
         top: -size,
@@ -473,7 +484,7 @@ export default function Tutorial({
 
     if (cardPlacement.placement === 'top') {
       const targetCenter = targetRect.left + targetRect.width / 2;
-      const relativeLeft = Math.max(16, Math.min(targetCenter - cardPlacement.left, (cardRef.current?.offsetWidth || 300) - 24));
+      const relativeLeft = Math.max(16, Math.min(targetCenter - cardPlacement.left, cWidth - 24));
       return {
         ...base,
         bottom: -size,
@@ -486,7 +497,7 @@ export default function Tutorial({
 
     if (cardPlacement.placement === 'right') {
       const targetCenter = targetRect.top + targetRect.height / 2;
-      const relativeTop = Math.max(16, Math.min(targetCenter - cardPlacement.top, (cardRef.current?.offsetHeight || 180) - 24));
+      const relativeTop = Math.max(16, Math.min(targetCenter - cardPlacement.top, cHeight - 24));
       return {
         ...base,
         left: -size,
@@ -499,7 +510,7 @@ export default function Tutorial({
 
     if (cardPlacement.placement === 'left') {
       const targetCenter = targetRect.top + targetRect.height / 2;
-      const relativeTop = Math.max(16, Math.min(targetCenter - cardPlacement.top, (cardRef.current?.offsetHeight || 180) - 24));
+      const relativeTop = Math.max(16, Math.min(targetCenter - cardPlacement.top, cHeight - 24));
       return {
         ...base,
         right: -size,
