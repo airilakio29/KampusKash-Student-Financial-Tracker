@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFinance } from '../context/FinanceContext';
+import { useAuth } from '../context/AuthContext';
 import { ACCOUNT_TYPE_ICONS } from '../services/accountService';
 import PieChart from '../components/PieChart';
 import {
@@ -12,7 +13,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Target,
-  Landmark
+  Landmark,
+  Sparkles
 } from 'lucide-react';
 
 export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, onOpenAddSavings, onOpenAddAccount }) {
@@ -29,6 +31,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
     savingsGoals,
     accounts
   } = useFinance();
+  const { user } = useAuth();
 
   const recentTransactions = transactions.slice(0, 5);
 
@@ -50,6 +53,25 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
 
   return (
     <div>
+      {/* Student Financial Motto (if set) */}
+      {user?.bio && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+          padding: '0.65rem 1rem',
+          background: 'var(--bg-card-subtle)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-light)',
+          marginBottom: '1.25rem',
+          fontSize: '0.85rem',
+          color: 'var(--text-muted)'
+        }}>
+          <Sparkles size={16} color="var(--primary)" />
+          <span>Motto: <strong style={{ color: 'var(--text-main)' }}>"{user.bio}"</strong></span>
+        </div>
+      )}
+
       {/* 4 Hero Metric Summary Cards */}
       <div className="grid-metrics" data-tour="dashboard-metrics">
         <div className="card metric-card">

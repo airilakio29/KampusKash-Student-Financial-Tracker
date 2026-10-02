@@ -41,7 +41,11 @@ import {
 } from '../src/services/authService.js';
 
 import {
-  getCleanDisplayName
+  getCleanDisplayName,
+  validateAvatarFile,
+  PRESET_AVATARS,
+  SUPPORTED_CURRENCIES,
+  MAX_AVATAR_SIZE_BYTES
 } from '../src/services/profileService.js';
 
 describe('KampusKash Phase 1 Foundation Test Suite', () => {
@@ -442,4 +446,56 @@ describe('KampusKash Phase 1 Foundation Test Suite', () => {
     });
   });
 
+  // ==================== USER PROFILE & CUSTOMIZATION TESTS ====================
+  describe('User Profile & Avatar Customization', () => {
+    it('should validate avatar file size (< 2MB) correctly', () => {
+      assert.equal(MAX_AVATAR_SIZE_BYTES, 2 * 1024 * 1024);
+
+      // Null or missing file
+      const emptyRes = validateAvatarFile(null);
+      assert.equal(emptyRes.valid, false);
+      assert.match(emptyRes.error, /choose an image/i);
+
+      // Non-image file type
+      const textFile = { type: 'text/plain', size: 1024 };
+      const textRes = validateAvatarFile(textFile);
+      assert.equal(textRes.valid, false);
+      assert.match(textRes.error, /image file/i);
+
+      // Oversized image (> 2MB)
+      const hugeFile = { type: 'image/jpeg', size: 2.5 * 1024 * 1024 };
+      const hugeRes = validateAvatarFile(hugeFile);
+      assert.equal(hugeRes.valid, false);
+      assert.match(hugeRes.error, /exceeds 2MB/i);
+
+      // Valid image within limit (1.5MB)
+      const validFile = { type: 'image/png', size: 1.5 * 1024 * 1024 };
+      const validRes = validateAvatarFile(validFile);
+      assert.equal(validRes.valid, true);
+      assert.equal(validRes.error, undefined);
+    });
+
+    it('should provide 6-8 distinct, vibrant preset student avatars', () => {
+      assert.ok(PRESET_AVATARS.length >= 6 && PRESET_AVATARS.length <= 10);
+      const ids = new Set();
+      for (const preset of PRESET_AVATARS) {
+        assert.ok(preset.id.startsWith('preset-'), `Expected preset id to start with preset-, got ${preset.id}`);
+        assert.ok(preset.label.length > 0);
+        assert.ok(preset.iconName.length > 0);
+        assert.ok(preset.bg.includes('gradient'));
+        assert.ok(!ids.has(preset.id), `Duplicate preset id found: ${preset.id}`);
+        ids.add(preset.id);
+      }
+    });
+
+    it('should support default and international student currencies', () => {
+      assert.ok(SUPPORTED_CURRENCIES.length >= 4);
+      const codes = SUPPORTED_CURRENCIES.map(c => c.code);
+      assert.ok(codes.includes('RM'));
+      assert.ok(codes.includes('USD'));
+      assert.ok(codes.includes('SGD'));
+    });
+  });
+
 });
+

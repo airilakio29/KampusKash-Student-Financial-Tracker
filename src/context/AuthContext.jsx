@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   auth, 
   onAuthStateChanged,
@@ -13,6 +13,10 @@ import {
   sendPasswordReset,
   logoutUser
 } from '../services/authService';
+import {
+  fetchUserProfile,
+  saveFullUserProfile
+} from '../services/profileService';
 
 const AuthContext = createContext();
 
@@ -44,9 +48,25 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return;
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        setUser(formatFirebaseUser(firebaseUser));
+        const baseUser = formatFirebaseUser(firebaseUser);
+        setUser(baseUser);
+
+        // Fetch cloud profile from Firestore to enrich with bio, monthlyBudget, etc.
+        try {
+          const cloudProfile = await fetchUserProfile(firebaseUser.uid);
+          if (cloudProfile) {
+            setUser(prev => prev ? ({
+              ...prev,
+              ...cloudProfile,
+              username: cloudProfile.username || prev.username,
+              avatar: cloudProfile.avatar || prev.avatar
+            }) : null);
+          }
+        } catch (err) {
+          console.warn('Failed to load cloud profile on auth state change', err);
+        }
       } else {
         setUser(null);
       }
@@ -73,6 +93,14 @@ export function AuthProvider({ children }) {
     const res = await loginWithEmail(email, password);
     if (res.success) {
       setUser(res.user);
+      try {
+        const cloudProfile = await fetchUserProfile(res.user.id);
+        if (cloudProfile) {
+          setUser(prev => prev ? ({ ...prev, ...cloudProfile }) : null);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch cloud profile post-login', err);
+      }
     }
     return res;
   };
@@ -89,6 +117,14 @@ export function AuthProvider({ children }) {
     const res = await authLoginWithGoogle();
     if (res.success) {
       setUser(res.user);
+      try {
+        const cloudProfile = await fetchUserProfile(res.user.id);
+        if (cloudProfile) {
+          setUser(prev => prev ? ({ ...prev, ...cloudProfile }) : null);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch cloud profile post-Google login', err);
+      }
     }
     return res;
   };
@@ -111,9 +147,29 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const updateUserProfile = (newDetails) => {
-    setUser(prev => prev ? ({ ...prev, ...newDetails }) : null);
-  };
+  const updateUserProfile = useCallback((newDetails) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = {
+        ...prev,
+        ...newDetails,
+        username: newDetails.username || prev.username,
+        avatar: newDetails.avatar || prev.avatar
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save user cache', e);
+      }
+      return updated;
+    });
+  }, []);
+
+  const saveProfile = useCallback(async (profileData) => {
+    if (!user?.id) return { success: false, error: 'No user authenticated.' };
+    updateUserProfile(profileData);
+    return await saveFullUserProfile(user.id, profileData);
+  }, [user, updateUserProfile]);
 
   const value = useMemo(() => ({
     user,
@@ -125,8 +181,9 @@ export function AuthProvider({ children }) {
     loginWithGoogle,
     resetPasswordWithFirebase,
     logout,
-    updateUserProfile
-  }), [user, isAuthResolved]);
+    updateUserProfile,
+    saveProfile
+  }), [user, isAuthResolved, updateUserProfile, saveProfile]);
 
   return (
     <AuthContext.Provider value={value}>

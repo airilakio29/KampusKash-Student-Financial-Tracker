@@ -104,8 +104,16 @@ export function FinanceProvider({ children }) {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.profile && updateUserProfile && currentUser) {
-          if (currentUser.username !== data.profile.username || currentUser.university !== data.profile.university) {
-            updateUserProfile(data.profile);
+          const p = data.profile;
+          if (
+            currentUser.username !== p.username ||
+            currentUser.university !== p.university ||
+            currentUser.bio !== p.bio ||
+            currentUser.monthlyBudget !== p.monthlyBudget ||
+            currentUser.currency !== p.currency ||
+            currentUser.avatar !== p.avatar
+          ) {
+            updateUserProfile(p);
           }
         }
         if (data.categories) setCategories(data.categories);

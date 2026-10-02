@@ -10,11 +10,20 @@ import {
   LogOut,
   X,
   Landmark,
-  BarChart3
+  BarChart3,
+  User as UserIcon
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
+import UserAvatar from './UserAvatar';
 
-export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction, isMobileOpen, setIsMobileOpen }) {
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+  onOpenAddTransaction,
+  onOpenProfileModal,
+  isMobileOpen,
+  setIsMobileOpen
+}) {
   const { user, logout } = useAuth();
 
   // Close drawer on Escape key press
@@ -49,13 +58,7 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
     return name;
   })();
 
-  const avatarDisplay = (() => {
-    const av = user?.avatar;
-    if (av && av.startsWith('http')) {
-      return displayName.charAt(0).toUpperCase();
-    }
-    return av || displayName.charAt(0).toUpperCase();
-  })();
+
 
   return (
     <>
@@ -156,39 +159,50 @@ export default function Sidebar({ activeTab, setActiveTab, onOpenAddTransaction,
           borderTop: '1px solid rgba(255,255,255,0.12)',
           marginTop: '1.5rem'
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.75rem',
-            background: 'rgba(255,255,255,0.06)',
-            borderRadius: 'var(--radius-md)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <div style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: 'var(--primary)',
-                color: '#FFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '1rem',
-                flexShrink: 0
-              }}>
-                {avatarDisplay}
-              </div>
-              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
+          <div
+            onClick={() => {
+              if (onOpenProfileModal) {
+                onOpenProfileModal();
+                if (isMobileOpen) setIsMobileOpen(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                if (onOpenProfileModal) onOpenProfileModal();
+                if (isMobileOpen) setIsMobileOpen(false);
+              }
+            }}
+            title="Edit Profile & Avatar"
+            aria-label="Edit Profile & Avatar"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: 'var(--radius-md)',
+              cursor: onOpenProfileModal ? 'pointer' : 'default',
+              transition: 'background var(--transition-fast)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
+              <UserAvatar avatar={user?.avatar} name={displayName} size={36} />
+              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {displayName}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user?.university || 'Student'}
+                  {user?.bio || user?.university || 'Student'}
                 </div>
               </div>
             </div>
+            {onOpenProfileModal && (
+              <span style={{ color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', marginLeft: '0.35rem' }}>
+                <UserIcon size={14} />
+              </span>
+            )}
           </div>
 
           <button

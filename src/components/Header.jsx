@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Menu, Calendar, ShieldCheck, FileText, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, Calendar, ShieldCheck, FileText, LogOut, ChevronDown, User } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import UserAvatar from './UserAvatar';
 
-export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
+export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "Dashboard" }) {
   const { user, logout } = useAuth();
   const { exportToPDF } = useFinance();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -16,14 +17,6 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
     // Reject anything that looks like a UID/hash (20+ hex chars)
     if (/^[a-f0-9]{20,}$/i.test(name.replace(/[\s-]/g, ''))) return 'Student';
     return name;
-  })();
-
-  const avatarDisplay = (() => {
-    const av = user?.avatar;
-    if (av && av.startsWith('http')) {
-      return displayName.charAt(0).toUpperCase();
-    }
-    return av || displayName.charAt(0).toUpperCase();
   })();
 
   const todayStr = new Date().toLocaleDateString('en-MY', {
@@ -85,6 +78,11 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
           </h2>
           <div className="header-subtitle">
             <span>Welcome back, <strong>{displayName}</strong> 👋</span>
+            {user?.bio && (
+              <span className="header-bio-pill" title={user.bio}>
+                · "{user.bio}"
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -114,6 +112,20 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
           <ShieldCheck size={13} />
           <span>Signed In</span>
         </div>
+
+        {/* Profile Pill Button */}
+        {onOpenProfileModal && (
+          <button
+            onClick={onOpenProfileModal}
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.75rem' }}
+            title="Edit Profile & Avatar"
+            aria-label="Edit Profile"
+          >
+            <UserAvatar avatar={user?.avatar} name={displayName} size={24} showBorder={false} />
+            <span style={{ fontWeight: 600 }}>Profile</span>
+          </button>
+        )}
 
         {/* Quick PDF Export */}
         <button
@@ -146,9 +158,7 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
           aria-expanded={isProfileOpen}
           aria-label="User profile and quick actions menu"
         >
-          <div className="mobile-profile-avatar">
-            {avatarDisplay}
-          </div>
+          <UserAvatar avatar={user?.avatar} name={displayName} size={32} showBorder={false} />
           <ChevronDown
             size={16}
             style={{
@@ -169,15 +179,13 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
               padding: '0.85rem 1rem',
               borderBottom: '1px solid var(--border-light)'
             }}>
-              <div className="mobile-profile-avatar" style={{ width: '38px', height: '38px', fontSize: '1rem' }}>
-                {avatarDisplay}
-              </div>
+              <UserAvatar avatar={user?.avatar} name={displayName} size={40} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {displayName}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user?.university || 'Student'}
+                  {user?.bio || user?.university || 'Student'}
                 </div>
               </div>
               <span className="badge badge-income" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>
@@ -202,6 +210,20 @@ export default function Header({ onOpenMobileMenu, title = "Dashboard" }) {
 
             {/* Actions List with Accessible >= 44px Touch Targets */}
             <div style={{ padding: '0.5rem' }}>
+              {onOpenProfileModal && (
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    onOpenProfileModal();
+                  }}
+                  className="dropdown-action-btn"
+                  aria-label="Edit Profile & Avatar"
+                >
+                  <User size={17} color="var(--primary-light)" />
+                  <span>Edit Profile & Avatar</span>
+                </button>
+              )}
+
               <button
                 onClick={handleExportPDF}
                 className="dropdown-action-btn"

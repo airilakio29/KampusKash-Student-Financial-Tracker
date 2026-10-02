@@ -13,8 +13,10 @@ import {
   Palette,
   Sparkles,
   Check,
-  BookOpen
+  BookOpen,
+  User
 } from 'lucide-react';
+import UserAvatar from '../components/UserAvatar';
 
 const getHexFromToken = (tokenValue) => {
   if (!tokenValue) return '#000000';
@@ -36,7 +38,7 @@ const getPresetColors = (presetId) => {
   };
 };
 
-export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
+export default function SettingsView({ onOpenAddCategory, onReplayTutorial, onOpenProfileModal }) {
   const {
     categories,
     deleteCategory,
@@ -136,6 +138,53 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial }) {
           {msg.text}
         </div>
       )}
+
+      {/* Student Profile & Identity Section */}
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div className="card-title" style={{ marginBottom: '1.25rem' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <User size={18} color="var(--primary)" /> Student Profile & Customization
+          </span>
+          {onOpenProfileModal && (
+            <button onClick={onOpenProfileModal} className="btn btn-primary btn-sm">
+              Edit Profile & Avatar
+            </button>
+          )}
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1.25rem',
+          flexWrap: 'wrap',
+          padding: '1.25rem',
+          background: 'var(--bg-card-subtle)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-light)'
+        }}>
+          <UserAvatar avatar={user?.avatar} name={displayName} size={64} />
+
+          <div style={{ flex: 1, minWidth: '220px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <h4 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                {displayName}
+              </h4>
+              <span className="badge badge-income" style={{ fontSize: '0.72rem' }}>
+                {user?.currency || 'RM'} Student Account
+              </span>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0 0.5rem' }}>
+              {user?.bio ? `"${user.bio}"` : 'No financial motto set yet.'}
+            </p>
+
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text-light)' }}>
+              <span>🏫 <strong>Campus:</strong> {user?.university || 'Campus Student'}</span>
+              <span>🎯 <strong>Monthly Target:</strong> {user?.currency || 'RM'} {Number(user?.monthlyBudget || 0).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Theme & Appearance Section */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>

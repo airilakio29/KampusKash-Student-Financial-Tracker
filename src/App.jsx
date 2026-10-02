@@ -24,14 +24,20 @@ import BudgetModal from './components/BudgetModal';
 import SavingsModal from './components/SavingsModal';
 import CategoryModal from './components/CategoryModal';
 import AccountModal from './components/AccountModal';
+import ProfileModal from './components/ProfileModal';
 
 function AppContent() {
   const { tutorialCompleted, completeTutorial, isLoading, loadError } = useFinance();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isReplayingTutorial, setIsReplayingTutorial] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const isTourActive = !tutorialCompleted || isReplayingTutorial;
+
+  const handleOpenProfileModal = () => {
+    setIsProfileModalOpen(true);
+  };
 
   // Modal Control States
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -152,6 +158,15 @@ function AppContent() {
           <SettingsView
             onOpenAddCategory={handleOpenAddCategory}
             onReplayTutorial={() => setIsReplayingTutorial(true)}
+            onOpenProfileModal={handleOpenProfileModal}
+          />
+        );
+      case 'profile':
+        return (
+          <SettingsView
+            onOpenAddCategory={handleOpenAddCategory}
+            onReplayTutorial={() => setIsReplayingTutorial(true)}
+            onOpenProfileModal={handleOpenProfileModal}
           />
         );
       default:
@@ -175,6 +190,7 @@ function AppContent() {
       case 'accounts': return 'My Accounts';
       case 'reports': return 'Reports & Analytics';
       case 'settings': return 'App Settings & Backup';
+      case 'profile': return 'Student Profile & Customization';
       default: return 'Financial Dashboard';
     }
   };
@@ -187,6 +203,7 @@ function AppContent() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenAddTransaction={handleOpenAddTransaction}
+        onOpenProfileModal={handleOpenProfileModal}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
@@ -195,6 +212,7 @@ function AppContent() {
         <Header
           title={getPageTitle()}
           onOpenMobileMenu={() => setIsMobileOpen(true)}
+          onOpenProfileModal={handleOpenProfileModal}
         />
 
         <main className="content-area">
@@ -260,6 +278,11 @@ function AppContent() {
         isOpen={isAccountModalOpen}
         onClose={() => setIsAccountModalOpen(false)}
         initialData={editingAccount}
+      />
+
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
       />
 
       {/* Modern Contextual Product Tour */}
