@@ -116,38 +116,32 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
       {/* Account Breakdown (if accounts exist) */}
       {accounts.length > 0 && (
         <div className="card" style={{ marginBottom: '1.75rem' }} data-tour="accounts">
-          <div className="card-title">
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Landmark size={18} color="var(--primary)" /> My Accounts
-            </span>
-            <button onClick={onOpenAddAccount} className="btn btn-secondary btn-sm">
+          <div className="accounts-section-header">
+            <div className="accounts-section-title">
+              <Landmark size={20} color="var(--primary)" />
+              <span>My Accounts</span>
+            </div>
+            <button
+              onClick={onOpenAddAccount}
+              className="btn btn-secondary btn-sm accounts-add-btn"
+              aria-label="Add Account"
+            >
               + Add Account
             </button>
           </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '0.75rem'
-          }}>
+          <div className="accounts-cards-grid">
             {accounts.map(acc => {
               const icon = ACCOUNT_TYPE_ICONS[acc.accountType] || '📋';
               return (
-                <div key={acc.accountId} style={{
-                  padding: '0.85rem 1rem',
-                  background: 'var(--bg-card-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem'
-                }}>
-                  <span style={{ fontSize: '1.3rem' }}>{icon}</span>
+                <div key={acc.accountId} className="account-card-item">
+                  <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>{icon}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {acc.accountName}
                     </div>
                     <div style={{
                       fontFamily: 'Plus Jakarta Sans',
-                      fontSize: '1.1rem',
+                      fontSize: '1.12rem',
                       fontWeight: 800,
                       color: acc.balance >= 0 ? 'var(--text-main)' : 'var(--expense)'
                     }}>
@@ -176,17 +170,21 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
         <div className="card">
           <div className="card-title">
             <span>Recent Transactions</span>
-            <button onClick={onOpenAddTransaction} className="btn btn-secondary btn-sm">
-              <PlusCircle size={14} /> Add
+            <button
+              onClick={onOpenAddTransaction}
+              className="btn btn-secondary btn-sm"
+              aria-label="Add transaction"
+            >
+              <PlusCircle size={15} /> <span>+ Add</span>
             </button>
           </div>
 
           {recentTransactions.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               No transactions yet. Click "+ Add" to log your first income or expense!
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
               {recentTransactions.map(t => {
                 const cat = categories.find(c => c.id === t.categoryId);
                 const isIncome = t.type === 'income';
@@ -195,13 +193,16 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '0.65rem 0.85rem',
+                    padding: '0.8rem 1rem',
+                    minHeight: '48px',
+                    boxSizing: 'border-box',
                     background: 'var(--bg-card-subtle)',
-                    borderRadius: 'var(--radius-sm)'
+                    borderRadius: 'var(--radius-sm)',
+                    transition: 'background var(--transition-fast)'
                   }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                         {t.date} · {cat ? cat.name : 'Uncategorized'}
                       </div>
                     </div>
@@ -210,7 +211,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
                       fontSize: '0.95rem',
                       color: isIncome ? 'var(--income)' : 'var(--expense)',
                       whiteSpace: 'nowrap',
-                      marginLeft: '0.5rem'
+                      flexShrink: 0
                     }}>
                       {isIncome ? '+' : '-'} RM {Number(t.amount).toFixed(2)}
                     </div>

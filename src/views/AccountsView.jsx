@@ -101,15 +101,15 @@ export default function AccountsView({ onOpenAddAccount, onEditAccount }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                  <div style={{ display: 'flex', gap: '0.45rem' }}>
                     <button
                       onClick={() => onEditAccount(account)}
                       className="btn btn-secondary btn-icon"
-                      style={{ width: '30px', height: '30px' }}
+                      style={{ minWidth: '40px', minHeight: '40px' }}
                       title="Edit Account"
                       aria-label={`Edit ${account.accountName}`}
                     >
-                      <Edit3 size={13} />
+                      <Edit3 size={15} />
                     </button>
                     <button
                       onClick={() => {
@@ -118,11 +118,11 @@ export default function AccountsView({ onOpenAddAccount, onEditAccount }) {
                         }
                       }}
                       className="btn btn-danger btn-icon"
-                      style={{ width: '30px', height: '30px' }}
+                      style={{ minWidth: '40px', minHeight: '40px' }}
                       title="Delete Account"
                       aria-label={`Delete ${account.accountName}`}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>

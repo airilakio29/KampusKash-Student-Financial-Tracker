@@ -338,14 +338,24 @@ export default function TransactionsView({ onOpenAddTransaction, onEditTransacti
                       <div style={{ fontWeight: 700, color: isIncome ? 'var(--income)' : 'var(--expense)', fontSize: '0.95rem' }}>
                         {isIncome ? '+' : '-'}RM {Number(t.amount).toFixed(2)}
                       </div>
-                      <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.35rem', justifyContent: 'flex-end' }}>
-                        <button onClick={() => onEditTransaction(t)} className="btn btn-secondary btn-icon" style={{ width: '28px', height: '28px' }} aria-label="Edit">
-                          <Edit3 size={12} />
+                      <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.35rem', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => onEditTransaction(t)}
+                          className="btn btn-secondary btn-icon mobile-action-btn"
+                          aria-label={`Edit ${t.title}`}
+                          title="Edit transaction"
+                        >
+                          <Edit3 size={15} />
                         </button>
-                        <button onClick={() => {
-                          if (window.confirm(`Delete "${t.title}"?`)) deleteTransaction(t.id);
-                        }} className="btn btn-danger btn-icon" style={{ width: '28px', height: '28px' }} aria-label="Delete">
-                          <Trash2 size={12} />
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete "${t.title}"?`)) deleteTransaction(t.id);
+                          }}
+                          className="btn btn-danger btn-icon mobile-action-btn"
+                          aria-label={`Delete ${t.title}`}
+                          title="Delete transaction"
+                        >
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </div>
@@ -363,6 +373,10 @@ export default function TransactionsView({ onOpenAddTransaction, onEditTransacti
         @media (max-width: 768px) {
           .desktop-table { display: none; }
           .mobile-tx-list { display: block; }
+          .mobile-action-btn {
+            min-width: 44px !important;
+            min-height: 44px !important;
+          }
         }
       `}</style>
     </div>

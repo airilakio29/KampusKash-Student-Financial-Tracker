@@ -143,7 +143,7 @@ export default function PieChart({ data = [] }) {
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
         gap: '0.65rem',
-        paddingTop: '0.5rem',
+        paddingTop: '0.75rem',
         borderTop: '1px solid var(--border-light)'
       }}>
         {slices.map((item) => (
@@ -151,29 +151,32 @@ export default function PieChart({ data = [] }) {
             key={item.id || item.index}
             onMouseEnter={() => setHoveredIndex(item.index)}
             onMouseLeave={() => setHoveredIndex(null)}
+            onClick={() => setHoveredIndex(prev => prev === item.index ? null : item.index)}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.35rem 0.5rem',
+              gap: '0.6rem',
+              padding: '0.5rem 0.65rem',
+              minHeight: '44px',
+              boxSizing: 'border-box',
               borderRadius: 'var(--radius-sm)',
-              background: hoveredIndex === item.index ? 'var(--primary-badge)' : 'transparent',
+              background: hoveredIndex === item.index ? 'var(--primary-badge)' : 'var(--bg-card-subtle)',
               cursor: 'pointer',
-              transition: 'background var(--transition-fast)'
+              transition: 'all var(--transition-fast)'
             }}
           >
             <span style={{
-              width: '10px',
-              height: '10px',
+              width: '12px',
+              height: '12px',
               borderRadius: '50%',
               backgroundColor: item.color,
               flexShrink: 0
             }} />
-            <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {item.name}
               </div>
-              <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                 RM {item.amount.toFixed(2)} ({item.percentage}%)
               </div>
             </div>
