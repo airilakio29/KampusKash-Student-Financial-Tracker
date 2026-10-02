@@ -9,189 +9,46 @@ import {
   PlusCircle, 
   Target, 
   PiggyBank, 
-  Settings, 
   Palette, 
-  DollarSign, 
-  Layers,
-  Landmark,
-  BarChart3,
-  Wallet
+  Landmark, 
+  BarChart3, 
+  Sparkles, 
+  User, 
+  FileText, 
+  BookOpen,
+  PieChart as PieIcon
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { useAuth } from '../context/AuthContext';
+import { TOUR_STEPS } from '../services/tutorialService';
 
-const TOUR_STEPS = [
-  {
-    id: 'welcome',
-    targetSelector: '[data-tour="dashboard-metrics"]',
-    tab: 'dashboard',
-    title: 'Welcome to KampusKash',
-    description: 'This is your financial dashboard. You can review your total balance, track incoming funds, monitor expenses, and check savings progress from here.',
-    icon: LayoutDashboard,
-    actionType: 'info',
-    preferredPosition: 'bottom'
-  },
-  {
-    id: 'transactions-nav',
-    targetSelector: '[data-tour="nav-transactions"]',
-    tab: 'dashboard',
-    title: 'Transactions View',
-    description: 'Click Transactions in the sidebar to review and manage all your income and expense records.',
-    icon: ReceiptText,
-    actionType: 'click',
-    preferredPosition: 'right'
-  },
-  {
-    id: 'add-transaction',
-    targetSelector: '[data-tour="transactions-add-btn"], [data-tour="add-transaction"]',
-    tab: 'transactions',
-    title: 'Record a Transaction',
-    description: 'Click Add Transaction to open the entry form and record money coming in or going out.',
-    icon: PlusCircle,
-    actionType: 'click',
-    preferredPosition: 'bottom'
-  },
-  {
-    id: 'transaction-type',
-    targetSelector: '[data-tour="transaction-type"]',
-    title: 'Transaction Type',
-    description: 'Select whether this entry is an expense or income.',
-    icon: Layers,
-    actionType: 'select',
-    preferredPosition: 'bottom',
-    requiresModal: true
-  },
-  {
-    id: 'transaction-amount',
-    targetSelector: '[data-tour="transaction-amount"]',
-    title: 'Transaction Amount',
-    description: 'Enter the amount in Ringgit for this transaction.',
-    icon: DollarSign,
-    actionType: 'input',
-    preferredPosition: 'bottom',
-    requiresModal: true
-  },
-  {
-    id: 'transaction-category',
-    targetSelector: '[data-tour="transaction-category"]',
-    title: 'Assign a Category',
-    description: 'Pick a category so your spending is properly grouped in your charts and budgets.',
-    icon: Layers,
-    actionType: 'select',
-    preferredPosition: 'bottom',
-    requiresModal: true
-  },
-  {
-    id: 'transaction-account',
-    targetSelector: '[data-tour="transaction-account"]',
-    title: 'Choose Account',
-    description: 'Optionally link this transaction to one of your accounts (Maybank, CIMB, Cash, E-Wallet).',
-    icon: Wallet,
-    actionType: 'select',
-    preferredPosition: 'bottom',
-    requiresModal: true
-  },
-  {
-    id: 'transaction-save',
-    targetSelector: '[data-tour="transaction-save"]',
-    title: 'Save Your Entry',
-    description: 'Click Save Changes or Add Transaction to record your transaction into your account.',
-    icon: Check,
-    actionType: 'completion',
-    preferredPosition: 'top',
-    requiresModal: true
-  },
-  {
-    id: 'dashboard-update',
-    targetSelector: '[data-tour="dashboard-metrics"]',
-    tab: 'dashboard',
-    title: 'Updated Balance',
-    description: 'Your new transaction is now saved and immediately reflected across your dashboard metrics.',
-    icon: LayoutDashboard,
-    actionType: 'info',
-    preferredPosition: 'bottom'
-  },
-  {
-    id: 'budgets-nav',
-    targetSelector: '[data-tour="nav-budgets"]',
-    tab: 'dashboard',
-    title: 'Category Budgets',
-    description: 'Set monthly spending limits for categories such as food, transport, and study materials.',
-    icon: Target,
-    actionType: 'info',
-    preferredPosition: 'right'
-  },
-  {
-    id: 'savings-nav',
-    targetSelector: '[data-tour="nav-savings"]',
-    tab: 'dashboard',
-    title: 'Savings Goals',
-    description: 'Create and monitor progress toward targets like tuition fees, equipment, or travel.',
-    icon: PiggyBank,
-    actionType: 'info',
-    preferredPosition: 'right'
-  },
-  {
-    id: 'accounts-nav',
-    targetSelector: '[data-tour="nav-accounts"]',
-    tab: 'dashboard',
-    title: 'Multi-Account Balances',
-    description: 'Track and manage your bank accounts, e-wallets, and cash reserves all in one place.',
-    icon: Landmark,
-    actionType: 'info',
-    preferredPosition: 'right'
-  },
-  {
-    id: 'reports-nav',
-    targetSelector: '[data-tour="nav-reports"]',
-    tab: 'dashboard',
-    title: 'Reports & Analytics',
-    description: 'Analyze your cash flows, monthly trends, and category spending distributions.',
-    icon: BarChart3,
-    actionType: 'info',
-    preferredPosition: 'right'
-  },
-  {
-    id: 'settings-nav',
-    targetSelector: '[data-tour="nav-settings"]',
-    tab: 'dashboard',
-    title: 'Settings and Backup',
-    description: 'Manage custom categories, download data backups, or customize your workspace from Settings.',
-    icon: Settings,
-    actionType: 'click',
-    preferredPosition: 'right'
-  },
-  {
-    id: 'theme-selector',
-    targetSelector: '[data-tour="theme-selector"]',
-    tab: 'settings',
-    title: 'Personalize Your Theme',
-    description: 'Choose from preset color palettes or fine-tune individual accents to suit your preferences.',
-    icon: Palette,
-    actionType: 'info',
-    preferredPosition: 'top'
-  },
-  {
-    id: 'finish',
-    targetSelector: null,
-    tab: 'settings',
-    title: 'Setup Complete',
-    description: 'You are now ready to track your campus finances. You can replay this tour anytime from Settings.',
-    icon: Check,
-    actionType: 'info',
-    preferredPosition: 'center'
-  }
-];
+const ICON_MAP = {
+  LayoutDashboard,
+  ReceiptText,
+  PlusCircle,
+  Target,
+  PiggyBank,
+  Palette,
+  Landmark,
+  BarChart3,
+  Sparkles,
+  User,
+  FileText,
+  BookOpen,
+  PieChart: PieIcon,
+  Check
+};
 
 export default function Tutorial({
   onComplete,
   activeTab,
   setActiveTab,
   isTransactionModalOpen,
-  onOpenAddTransaction
+  onOpenAddTransaction,
+  isProfileModalOpen,
+  onOpenProfileModal,
+  onCloseProfileModal
 }) {
-  const { user } = useAuth();
-  const { transactions, completeTutorial } = useFinance();
+  const { completeTutorial } = useFinance();
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
@@ -199,30 +56,24 @@ export default function Tutorial({
   const [isElementVisible, setIsElementVisible] = useState(false);
 
   const cardRef = useRef(null);
-  const initialTxCount = useRef(transactions ? transactions.length : 0);
 
   const step = TOUR_STEPS[currentStepIndex] || TOUR_STEPS[0];
-  const Icon = step.icon;
+  const Icon = ICON_MAP[step.iconName] || LayoutDashboard;
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === TOUR_STEPS.length - 1;
 
   // Complete tour handler
   const handleFinish = useCallback(() => {
-    if (user?.id) {
-      resetTutorial(user.id);
-      try {
-        localStorage.setItem(getTutorialStorageKey(user.id), 'true');
-      } catch (e) {
-        console.error(e);
-      }
-    }
     if (completeTutorial) {
       completeTutorial();
+    }
+    if (onCloseProfileModal) {
+      onCloseProfileModal();
     }
     if (onComplete) {
       onComplete();
     }
-  }, [user, completeTutorial, onComplete]);
+  }, [completeTutorial, onCloseProfileModal, onComplete]);
 
   // Navigate to step
   const goToStep = useCallback((index) => {
@@ -239,8 +90,23 @@ export default function Tutorial({
       onOpenAddTransaction();
     }
 
+    // Auto-open profile modal if step requires it
+    if (nextStep.requiresProfileModal && !isProfileModalOpen && onOpenProfileModal) {
+      onOpenProfileModal();
+    } else if (!nextStep.requiresProfileModal && isProfileModalOpen && onCloseProfileModal) {
+      onCloseProfileModal();
+    }
+
     setCurrentStepIndex(index);
-  }, [activeTab, setActiveTab, isTransactionModalOpen, onOpenAddTransaction]);
+  }, [
+    activeTab, 
+    setActiveTab, 
+    isTransactionModalOpen, 
+    onOpenAddTransaction, 
+    isProfileModalOpen, 
+    onOpenProfileModal, 
+    onCloseProfileModal
+  ]);
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
@@ -369,7 +235,7 @@ export default function Tutorial({
         }
       }
       updatePosition();
-    }, 100);
+    }, 120);
 
     return () => clearTimeout(timer);
   }, [currentStepIndex, findTargetElement, updatePosition]);
@@ -404,54 +270,6 @@ export default function Tutorial({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleFinish, handleNext, handleBack, step.actionType, isFirstStep]);
-
-  // Interactive step handling (click, input, completion)
-  useEffect(() => {
-    const el = findTargetElement();
-    if (!el) return;
-
-    if (step.actionType === 'click') {
-      const handleClick = () => {
-        // Allow the application's click event to fire first, then advance
-        setTimeout(() => {
-          handleNext();
-        }, 150);
-      };
-      el.addEventListener('click', handleClick);
-      return () => el.removeEventListener('click', handleClick);
-    }
-
-    if (step.actionType === 'input') {
-      const handleInput = (e) => {
-        if (e.target && e.target.value && Number(e.target.value) > 0) {
-          // If valid input is entered, wait for user to finish or click next
-        }
-      };
-      el.addEventListener('input', handleInput);
-      return () => el.removeEventListener('input', handleInput);
-    }
-
-    if (step.actionType === 'completion') {
-      const handleSubmit = () => {
-        setTimeout(() => {
-          handleNext();
-        }, 300);
-      };
-      el.addEventListener('click', handleSubmit);
-      return () => el.removeEventListener('click', handleSubmit);
-    }
-  }, [currentStepIndex, step.actionType, findTargetElement, handleNext]);
-
-  // Track transaction addition during completion step
-  useEffect(() => {
-    if (step.id === 'transaction-save' || step.id === 'add-transaction') {
-      const currentCount = transactions ? transactions.length : 0;
-      if (currentCount > initialTxCount.current) {
-        initialTxCount.current = currentCount;
-        handleNext();
-      }
-    }
-  }, [transactions, step.id, handleNext]);
 
   // Calculate arrow caret positioning
   const getCaretStyles = () => {
@@ -555,13 +373,13 @@ export default function Tutorial({
           position: 'fixed',
           top: `${cardPlacement.top}px`,
           left: `${cardPlacement.left}px`,
-          width: 'clamp(280px, 88vw, 340px)',
+          width: 'clamp(280px, 88vw, 350px)',
           background: 'var(--bg-card)',
-          borderRadius: '12px',
+          borderRadius: '14px',
           border: '1px solid var(--border-light)',
-          boxShadow: '0 16px 36px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2)',
+          boxShadow: '0 16px 36px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25)',
           zIndex: 9999,
-          padding: '1.1rem 1.15rem 1rem',
+          padding: '1.15rem 1.2rem 1.05rem',
           display: isElementVisible ? 'flex' : 'none',
           flexDirection: 'column',
           gap: '0.65rem',
@@ -575,21 +393,21 @@ export default function Tutorial({
 
         {/* Card Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '6px',
-              background: 'color-mix(in srgb, var(--primary) 18%, transparent)',
+              width: '26px',
+              height: '26px',
+              borderRadius: '7px',
+              background: 'color-mix(in srgb, var(--primary) 20%, transparent)',
               color: 'var(--primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Icon size={14} />
+              <Icon size={15} />
             </div>
             <span style={{
-              fontSize: '0.72rem',
+              fontSize: '0.74rem',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
@@ -607,7 +425,7 @@ export default function Tutorial({
               border: 'none',
               color: 'var(--text-muted)',
               cursor: 'pointer',
-              padding: '2px',
+              padding: '3px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -620,19 +438,35 @@ export default function Tutorial({
           </button>
         </div>
 
+        {/* Progress Bar */}
+        <div style={{
+          width: '100%',
+          height: '3px',
+          background: 'var(--border-light)',
+          borderRadius: '2px',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            height: '100%',
+            width: `${((currentStepIndex + 1) / TOUR_STEPS.length) * 100}%`,
+            background: 'var(--primary)',
+            transition: 'width 0.25s ease'
+          }} />
+        </div>
+
         {/* Title & Description */}
         <div>
           <h4 style={{
-            fontSize: '0.98rem',
-            fontWeight: 700,
+            fontSize: '1rem',
+            fontWeight: 800,
             margin: '0 0 0.35rem 0',
             color: 'var(--text-main)',
-            lineHeight: 1.25
+            lineHeight: 1.3
           }}>
             {step.title}
           </h4>
           <p style={{
-            fontSize: '0.82rem',
+            fontSize: '0.83rem',
             color: 'var(--text-muted)',
             lineHeight: 1.5,
             margin: 0
@@ -646,8 +480,8 @@ export default function Tutorial({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: '0.4rem',
-          paddingTop: '0.6rem',
+          marginTop: '0.35rem',
+          paddingTop: '0.65rem',
           borderTop: '1px solid var(--border-light)'
         }}>
           <button
@@ -656,7 +490,7 @@ export default function Tutorial({
               background: 'none',
               border: 'none',
               color: 'var(--text-muted)',
-              fontSize: '0.76rem',
+              fontSize: '0.78rem',
               fontWeight: 500,
               cursor: 'pointer',
               padding: 0,
@@ -667,7 +501,7 @@ export default function Tutorial({
             Skip tour
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
             {!isFirstStep && (
               <button
                 onClick={handleBack}
@@ -675,7 +509,7 @@ export default function Tutorial({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.2rem',
-                  padding: '0.35rem 0.65rem',
+                  padding: '0.38rem 0.7rem',
                   background: 'var(--bg-card-subtle)',
                   color: 'var(--text-main)',
                   border: '1px solid var(--border-light)',
@@ -695,7 +529,7 @@ export default function Tutorial({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.25rem',
-                padding: '0.38rem 0.85rem',
+                padding: '0.4rem 0.9rem',
                 background: 'var(--primary)',
                 color: 'var(--text-white, #FFFFFF)',
                 border: 'none',

@@ -296,6 +296,9 @@ function AppContent() {
           setActiveTab={setActiveTab}
           isTransactionModalOpen={isTransactionModalOpen}
           onOpenAddTransaction={handleOpenAddTransaction}
+          isProfileModalOpen={isProfileModalOpen}
+          onOpenProfileModal={handleOpenProfileModal}
+          onCloseProfileModal={() => setIsProfileModalOpen(false)}
         />
       )}
     </div>

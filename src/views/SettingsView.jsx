@@ -140,13 +140,13 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial, onOp
       )}
 
       {/* Student Profile & Identity Section */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
+      <div className="card" data-tour="settings-profile-card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-title" style={{ marginBottom: '1.25rem' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <User size={18} color="var(--primary)" /> Student Profile & Customization
           </span>
           {onOpenProfileModal && (
-            <button onClick={onOpenProfileModal} className="btn btn-primary btn-sm">
+            <button data-tour="settings-edit-profile-btn" onClick={onOpenProfileModal} className="btn btn-primary btn-sm">
               Edit Profile & Avatar
             </button>
           )}
@@ -302,7 +302,7 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial, onOp
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {/* Category Management */}
-        <div className="card">
+        <div className="card" data-tour="category-manager">
           <div className="card-title">
             <span>Category Manager</span>
             <button onClick={onOpenAddCategory} className="btn btn-primary btn-sm">
@@ -353,7 +353,7 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial, onOp
         </div>
 
         {/* Data Backup & Restore */}
-        <div className="card">
+        <div className="card" data-tour="backup-manager">
           <div className="card-title">
             <span>Data Backup & Management</span>
           </div>

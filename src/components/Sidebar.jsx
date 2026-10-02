@@ -160,6 +160,7 @@ export default function Sidebar({
           marginTop: '1.5rem'
         }}>
           <div
+            data-tour="sidebar-profile-card"
             onClick={() => {
               if (onOpenProfileModal) {
                 onOpenProfileModal();

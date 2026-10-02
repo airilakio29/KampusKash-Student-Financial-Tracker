@@ -55,7 +55,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
     <div>
       {/* Student Financial Motto (if set) */}
       {user?.bio && (
-        <div style={{
+        <div data-tour="motto-banner" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
@@ -180,7 +180,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
       {/* Main Dashboard Section: Category Pie Chart + Recent Activity */}
       <div className="grid-dashboard-main">
         {/* Direct Category Spending Pie Chart */}
-        <div className="card">
+        <div className="card" data-tour="category-chart">
           <div className="card-title">
             <span>Category Spending Breakdown</span>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>Real-time</span>
@@ -189,7 +189,7 @@ export default function DashboardView({ onOpenAddTransaction, onOpenAddBudget, o
         </div>
 
         {/* Recent Activity Table */}
-        <div className="card">
+        <div className="card" data-tour="recent-transactions">
           <div className="card-title">
             <span>Recent Transactions</span>
             <button

@@ -76,7 +76,7 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
           <h2 className="header-page-title">
             {title}
           </h2>
-          <div className="header-subtitle">
+          <div className="header-subtitle" data-tour="header-greeting">
             <span>Welcome back, <strong>{displayName}</strong> 👋</span>
             {user?.bio && (
               <span className="header-bio-pill" title={user.bio}>
@@ -116,6 +116,7 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
         {/* Profile Pill Button */}
         {onOpenProfileModal && (
           <button
+            data-tour="profile-btn"
             onClick={onOpenProfileModal}
             className="btn btn-secondary btn-sm"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.75rem' }}
@@ -129,6 +130,7 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
 
         {/* Quick PDF Export */}
         <button
+          data-tour="export-pdf-btn"
           onClick={handleExportPDF}
           className="btn btn-secondary btn-sm"
           title="Export PDF Report"
@@ -153,6 +155,7 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
       {/* Right Mobile: Avatar / Profile Dropdown Trigger */}
       <div className="header-mobile-actions" ref={dropdownRef}>
         <button
+          data-tour="profile-btn"
           onClick={() => setIsProfileOpen(prev => !prev)}
           className="mobile-profile-trigger"
           aria-expanded={isProfileOpen}

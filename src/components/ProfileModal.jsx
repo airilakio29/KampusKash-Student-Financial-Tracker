@@ -219,7 +219,7 @@ function ProfileModalContent({ user, onClose }) {
 
         <form onSubmit={handleSubmit}>
           {/* Circular Live Preview Header */}
-          <div style={{
+          <div data-tour="profile-avatar-preview" style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -280,7 +280,7 @@ function ProfileModalContent({ user, onClose }) {
           </div>
 
           {/* Avatar Selector Switcher */}
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div data-tour="profile-avatar-presets" style={{ marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
               <label className="form-label" style={{ marginBottom: 0 }}>
                 Choose Your Avatar
@@ -387,7 +387,7 @@ function ProfileModalContent({ user, onClose }) {
           </div>
 
           {/* Form Fields */}
-          <div className="form-group">
+          <div className="form-group" data-tour="profile-fields">
             <label className="form-label" htmlFor="profile-username">
               Full / Display Name *
             </label>

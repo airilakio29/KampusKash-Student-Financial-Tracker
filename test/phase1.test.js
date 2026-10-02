@@ -48,6 +48,12 @@ import {
   MAX_AVATAR_SIZE_BYTES
 } from '../src/services/profileService.js';
 
+import {
+  TOUR_STEPS,
+  getTourStepById,
+  getTotalTourSteps
+} from '../src/services/tutorialService.js';
+
 describe('KampusKash Phase 1 Foundation Test Suite', () => {
 
   // ==================== AUTH & PROFILE TESTS ====================
@@ -497,5 +503,58 @@ describe('KampusKash Phase 1 Foundation Test Suite', () => {
     });
   });
 
+  // ==================== UPGRADED TUTORIAL & ONBOARDING TESTS ====================
+  describe('Upgraded Tutorial & Onboarding System', () => {
+    it('should include all comprehensive feature milestones in TOUR_STEPS', () => {
+      assert.equal(getTotalTourSteps(), 14);
+      assert.equal(TOUR_STEPS.length, 14);
+
+      // Verify essential newly introduced feature step IDs
+      const stepIds = TOUR_STEPS.map(s => s.id);
+      assert.ok(stepIds.includes('welcome'), 'Missing welcome step');
+      assert.ok(stepIds.includes('student-identity'), 'Missing student identity & motto step');
+      assert.ok(stepIds.includes('my-accounts'), 'Missing multi-accounts step');
+      assert.ok(stepIds.includes('spending-breakdown'), 'Missing spending pie chart step');
+      assert.ok(stepIds.includes('export-pdf'), 'Missing PDF statement step');
+      assert.ok(stepIds.includes('transactions-nav'), 'Missing transactions nav step');
+      assert.ok(stepIds.includes('add-transaction'), 'Missing add transaction step');
+      assert.ok(stepIds.includes('budgets-nav'), 'Missing budgets step');
+      assert.ok(stepIds.includes('savings-nav'), 'Missing savings step');
+      assert.ok(stepIds.includes('reports-nav'), 'Missing reports step');
+      assert.ok(stepIds.includes('profile-customization'), 'Missing student profile & avatar step');
+      assert.ok(stepIds.includes('theme-selector'), 'Missing theme customizer step');
+      assert.ok(stepIds.includes('data-backup-replay'), 'Missing data backup & tour replay step');
+      assert.ok(stepIds.includes('finish'), 'Missing finish step');
+    });
+
+    it('should ensure each step contains valid metadata, titles, and descriptions', () => {
+      for (const step of TOUR_STEPS) {
+        assert.ok(typeof step.id === 'string' && step.id.length > 0);
+        assert.ok(typeof step.title === 'string' && step.title.length > 0);
+        assert.ok(typeof step.description === 'string' && step.description.length > 0);
+        assert.ok(typeof step.iconName === 'string' && step.iconName.length > 0);
+        assert.ok(['bottom', 'top', 'right', 'left', 'center'].includes(step.preferredPosition));
+      }
+    });
+
+    it('should correctly retrieve step details via getTourStepById', () => {
+      const profileStep = getTourStepById('profile-customization');
+      assert.ok(profileStep !== undefined);
+      assert.equal(profileStep.tab, 'settings');
+      assert.match(profileStep.title, /Avatar/i);
+      assert.match(profileStep.description, /8 modern preset avatars/i);
+
+      const accountsStep = getTourStepById('my-accounts');
+      assert.ok(accountsStep !== undefined);
+      assert.equal(accountsStep.tab, 'dashboard');
+      assert.match(accountsStep.description, /CIMB, MAE\/Maybank/i);
+
+      const pdfStep = getTourStepById('export-pdf');
+      assert.ok(pdfStep !== undefined);
+      assert.match(pdfStep.title, /PDF/i);
+    });
+  });
+
 });
+
 
