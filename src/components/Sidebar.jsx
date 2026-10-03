@@ -13,7 +13,7 @@ import {
   BarChart3,
   User as UserIcon
 } from 'lucide-react';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/kiro-logo.png';
 import UserAvatar from './UserAvatar';
 
 export default function Sidebar({
@@ -74,46 +74,41 @@ export default function Sidebar({
       <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
         <div>
           {/* Brand Logo & Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                flexShrink: 0
-              }}>
+          <div className="sidebar-brand-wrapper">
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%' }}>
+              <button
+                onClick={() => {
+                  setActiveTab('dashboard');
+                  if (isMobileOpen) setIsMobileOpen(false);
+                }}
+                className="sidebar-logo-btn"
+                aria-label="KiroKash - Go to Dashboard"
+                title="Go to Dashboard"
+              >
                 <img
-                  src={logoImg || `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/')}
-                  alt="KampusKash"
+                  src={logoImg || `${import.meta.env.BASE_URL || '/'}kiro-logo.png`.replace(/\/{2,}/g, '/')}
+                  alt="KiroKash"
+                  className="sidebar-logo-img"
                   onError={(e) => {
-                    const fallback = `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/');
+                    const fallback = `${import.meta.env.BASE_URL || '/'}kiro-logo.png`.replace(/\/{2,}/g, '/');
                     if (e.target.src !== fallback) e.target.src = fallback;
                   }}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
-              </div>
-              <div>
-                <h1 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.1 }}>
-                  KampusKash
-                </h1>
-                <span style={{ fontSize: '0.72rem', color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500 }}>
-                  Your friendly campus wallet
-                </span>
-              </div>
+              </button>
+
+              <button
+                onClick={() => setIsMobileOpen(false)}
+                className="mobile-close-btn"
+                aria-label="Close navigation drawer"
+                title="Close menu"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <button
-              onClick={() => setIsMobileOpen(false)}
-              className="mobile-close-btn"
-              aria-label="Close navigation drawer"
-              title="Close menu"
-            >
-              <X size={20} />
-            </button>
+            <span className="sidebar-tagline">
+              Your friendly campus wallet
+            </span>
           </div>
 
           {/* Quick Add Button with Min 44px Height */}
@@ -236,6 +231,55 @@ export default function Sidebar({
           -webkit-overflow-scrolling: touch;
         }
 
+        .sidebar-brand-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          padding-top: 0.25rem;
+          padding-bottom: 1.25rem;
+          margin-bottom: 0.25rem;
+        }
+
+        .sidebar-logo-btn {
+          background: transparent;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          text-align: left;
+          border-radius: 8px;
+          transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .sidebar-logo-btn:hover {
+          transform: scale(1.02);
+          opacity: 0.95;
+        }
+
+        .sidebar-logo-btn:focus-visible {
+          outline: 2px solid var(--primary, #8b5cf6);
+          outline-offset: 4px;
+        }
+
+        .sidebar-logo-img {
+          width: 160px;
+          max-width: 175px;
+          height: auto;
+          max-height: 65px;
+          object-fit: contain;
+          display: block;
+        }
+
+        .sidebar-tagline {
+          font-size: 0.74rem;
+          color: rgba(255, 255, 255, 0.65);
+          font-weight: 500;
+          margin-top: 0.5rem;
+          letter-spacing: 0.01em;
+          display: block;
+        }
+
         .sidebar-add-btn {
           width: 100%;
           min-height: 44px;
@@ -349,6 +393,11 @@ export default function Sidebar({
 
           .mobile-close-btn {
             display: flex !important;
+          }
+
+          .sidebar-logo-img {
+            width: 115px;
+            max-width: 125px;
           }
         }
       `}</style>

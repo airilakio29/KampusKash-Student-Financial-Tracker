@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { Lock, User, LogIn, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle2, ArrowLeft, Mail, Send, RefreshCw } from 'lucide-react';
-import logoImg from './assets/logo.png';
+import logoImg from './assets/kiro-logo.png';
 
 export default function Auth({ initialMode }) {
   const { 
@@ -91,7 +91,7 @@ export default function Auth({ initialMode }) {
       );
 
       if (result.success) {
-        setSuccess('Account registered successfully! Welcome to KampusKash.');
+        setSuccess('Account registered successfully! Welcome to KiroKash.');
       } else {
         setError(result.error ? formatFirebaseError({ message: result.error, code: result.code }) : 'Failed to register account.');
       }
@@ -200,28 +200,28 @@ export default function Auth({ initialMode }) {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '16px',
-            margin: '0 auto 1rem',
+            width: 'min(210px, 65vw)',
+            height: 'auto',
+            maxHeight: '75px',
+            margin: '0 auto 0.75rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative'
           }}>
             <img
-              src={logoImg || `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/')}
-              alt="KampusKash Logo"
+              src={logoImg || `${import.meta.env.BASE_URL || '/'}kiro-logo.png`.replace(/\/{2,}/g, '/')}
+              alt="KiroKash Logo"
               onError={(e) => {
-                const fallback = `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/');
+                const fallback = `${import.meta.env.BASE_URL || '/'}kiro-logo.png`.replace(/\/{2,}/g, '/');
                 if (e.target.src !== fallback) e.target.src = fallback;
               }}
               style={{
                 width: '100%',
-                height: '100%',
+                height: 'auto',
+                maxHeight: '75px',
                 objectFit: 'contain',
-                borderRadius: '16px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)'
+                filter: 'drop-shadow(0 6px 18px rgba(139, 92, 246, 0.35))'
               }}
             />
           </div>
@@ -233,7 +233,7 @@ export default function Auth({ initialMode }) {
             marginBottom: '0.25rem',
             letterSpacing: '-0.025em'
           }}>
-            KampusKash
+            KiroKash
           </h1>
           <p style={{
             fontSize: '0.85rem',

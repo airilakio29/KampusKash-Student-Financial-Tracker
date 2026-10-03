@@ -82,11 +82,11 @@ export default function SettingsView({ onOpenAddCategory, onReplayTutorial, onOp
 
   const handleResetTheme = () => {
     setUseCustomColors(false);
-    const defaultConfig = { presetId: 'purple', customColors: null };
+    const defaultConfig = { presetId: 'kiro', customColors: null };
     setActiveThemeConfig(defaultConfig);
     saveTheme(defaultConfig);
-    setCustomColors(getPresetColors('purple'));
-    setMsg({ text: 'Theme reset to KampusKash Purple default.', isError: false });
+    setCustomColors(getPresetColors('kiro'));
+    setMsg({ text: 'Theme reset to Kiro default.', isError: false });
   };
 
   const handleFileUpload = (e) => {

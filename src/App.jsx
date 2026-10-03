@@ -6,6 +6,7 @@ import { missingFirebaseKeys } from './firebase';
 import FullScreenLoader from './components/FullScreenLoader';
 import ResetPassword from './components/ResetPassword';
 import GlitterBackground from './components/GlitterBackground';
+import KiroAmbientParticles from './components/KiroAmbientParticles';
 import Auth from './Auth';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -25,17 +26,39 @@ import SavingsModal from './components/SavingsModal';
 import CategoryModal from './components/CategoryModal';
 import AccountModal from './components/AccountModal';
 import ProfileModal from './components/ProfileModal';
+import OnboardingWizard from './components/OnboardingWizard';
 
 function AppContent() {
-  const { tutorialCompleted, completeTutorial, isLoading, loadError } = useFinance();
+  const {
+    completeTutorial,
+    onboardingCompleted,
+    onboardingStep,
+    updateOnboardingStep,
+    completeOnboarding,
+    isLoading,
+    loadError
+  } = useFinance();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isReplayingTutorial, setIsReplayingTutorial] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  const isTourActive = !tutorialCompleted || isReplayingTutorial;
+  // Mandatory Onboarding Flow:
+  // Step A: Profile setup (required first, blocks app routes)
+  // Step B: Guided interactive tutorial on Dashboard
+  const isOnboardingActive = !onboardingCompleted;
+  const isTourActive = (isOnboardingActive && onboardingStep === 'tutorial') || isReplayingTutorial;
+
+  // Block route navigation during Step A profile setup
+  const handleTabChange = (newTab) => {
+    if (isOnboardingActive && onboardingStep === 'profile') {
+      return; // Route blocked until profile setup is complete
+    }
+    setActiveTab(newTab);
+  };
 
   const handleOpenProfileModal = () => {
+    if (isOnboardingActive && onboardingStep === 'profile') return;
     setIsProfileModalOpen(true);
   };
 
@@ -198,10 +221,11 @@ function AppContent() {
   return (
     <div className="app-container">
       <GlitterBackground />
+      <KiroAmbientParticles />
 
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         onOpenAddTransaction={handleOpenAddTransaction}
         onOpenProfileModal={handleOpenProfileModal}
         isMobileOpen={isMobileOpen}
@@ -285,11 +309,25 @@ function AppContent() {
         onClose={() => setIsProfileModalOpen(false)}
       />
 
-      {/* Modern Contextual Product Tour */}
+      {/* Step A: Profile Setup Wizard (shown immediately on first login before reaching Dashboard) */}
+      {isOnboardingActive && onboardingStep === 'profile' && (
+        <OnboardingWizard
+          onCompleteProfile={() => {
+            updateOnboardingStep('tutorial');
+            setActiveTab('dashboard');
+          }}
+        />
+      )}
+
+      {/* Step B / Replay: Modern Contextual Product Tour */}
       {isTourActive && (
         <Tutorial
           onComplete={() => {
-            completeTutorial();
+            if (isOnboardingActive) {
+              completeOnboarding();
+            } else {
+              completeTutorial();
+            }
             setIsReplayingTutorial(false);
           }}
           activeTab={activeTab}
@@ -469,6 +507,7 @@ function AppAuthenticator() {
     return (
       <>
         <GlitterBackground />
+        <KiroAmbientParticles />
         <ResetPassword oobCode={oobCode} onBackToLogin={handleBackToLogin} />
       </>
     );
@@ -478,6 +517,7 @@ function AppAuthenticator() {
     return (
       <>
         <GlitterBackground />
+        <KiroAmbientParticles />
         <Auth initialMode={authInitialMode} />
       </>
     );

@@ -528,19 +528,27 @@ export default function Tutorial({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.25rem',
-                padding: '0.4rem 0.9rem',
+                gap: '0.35rem',
+                padding: isLastStep ? '0.45rem 1rem' : '0.4rem 0.9rem',
                 background: 'var(--primary)',
                 color: 'var(--text-white, #FFFFFF)',
                 border: 'none',
                 borderRadius: '6px',
-                fontSize: '0.78rem',
+                fontSize: '0.8rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                transition: 'opacity 0.15s ease'
+                transition: 'all 0.15s ease'
               }}
             >
-              {isLastStep ? 'Done' : 'Next'} <ChevronRight size={13} />
+              {isLastStep ? (
+                <>
+                  <Check size={14} /> Start using KiroKash
+                </>
+              ) : (
+                <>
+                  Next <ChevronRight size={13} />
+                </>
+              )}
             </button>
           </div>
         </div>

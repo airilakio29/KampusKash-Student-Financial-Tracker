@@ -10,7 +10,12 @@ import {
 import {
   calculateTotalAccountBalance
 } from '../services/accountService';
-import { setTutorialCompletion } from '../services/settingsService';
+import {
+  setTutorialCompletion,
+  setOnboardingStatus,
+  ONBOARDING_KEY_PREFIX,
+  ONBOARDING_STEP_PREFIX
+} from '../services/settingsService';
 
 const FinanceContext = createContext();
 
@@ -20,7 +25,7 @@ const STORAGE_KEYS = {
   BUDGETS: 'student_tracker_budgets',
   SAVINGS: 'student_tracker_savings',
   ACCOUNTS: 'student_tracker_accounts',
-  TUTORIAL: 'kampuskash_tutorial_completed'
+  TUTORIAL: 'kirokash_tutorial_completed'
 };
 
 const defaultCategories = [
@@ -85,6 +90,25 @@ export function FinanceProvider({ children }) {
     } catch { return false; }
   });
 
+  const [onboardingCompleted, setOnboardingCompleted] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`${ONBOARDING_KEY_PREFIX}${userId}`);
+      if (saved !== null) return saved === 'true';
+      const tut = localStorage.getItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`);
+      return tut === 'true';
+    } catch { return false; }
+  });
+
+  const [onboardingStep, setOnboardingStep] = useState(() => {
+    try {
+      const step = localStorage.getItem(`${ONBOARDING_STEP_PREFIX}${userId}`);
+      if (step) return step;
+      const saved = localStorage.getItem(`${ONBOARDING_KEY_PREFIX}${userId}`);
+      if (saved === 'true') return 'completed';
+    } catch {}
+    return 'profile';
+  });
+
   const userRef = useRef(user);
   useEffect(() => {
     userRef.current = user;
@@ -121,12 +145,57 @@ export function FinanceProvider({ children }) {
         if (data.budgets) setBudgets(data.budgets);
         if (data.savingsGoals) setSavingsGoals(data.savingsGoals);
         if (Array.isArray(data.accounts)) setAccounts(data.accounts);
-        if (typeof data.tutorialCompleted === 'boolean') {
-          setTutorialCompleted(data.tutorialCompleted);
+
+        // Synchronize onboarding & tutorial status
+        if (typeof data.onboardingCompleted === 'boolean') {
+          setOnboardingCompleted(data.onboardingCompleted);
+          const resolvedStep = data.onboardingStep || (data.onboardingCompleted ? 'completed' : 'profile');
+          setOnboardingStep(resolvedStep);
+          setTutorialCompleted(data.onboardingCompleted || Boolean(data.tutorialCompleted));
           try {
-            localStorage.setItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`, String(data.tutorialCompleted));
+            localStorage.setItem(`${ONBOARDING_KEY_PREFIX}${userId}`, String(data.onboardingCompleted));
+            localStorage.setItem(`${ONBOARDING_STEP_PREFIX}${userId}`, resolvedStep);
+            localStorage.setItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`, String(data.onboardingCompleted || Boolean(data.tutorialCompleted)));
           } catch (e) {
             console.error('LocalStorage write error', e);
+          }
+        } else {
+          // Graceful handling for existing accounts:
+          // Existing users with accounts should not be forced through onboarding unless profile is empty
+          const isProfileSet = Boolean(
+            data.profile?.username &&
+            data.profile.username !== 'Student' &&
+            !/^[a-f0-9]{20,}$/i.test(data.profile.username.replace(/[\s-]/g, '')) &&
+            (data.profile.university || data.profile.bio || data.profile.monthlyBudget)
+          );
+          const hasFinancialHistory = Boolean(
+            (data.transactions && data.transactions.length > 0) ||
+            (data.accounts && data.accounts.length > 0) ||
+            data.tutorialCompleted === true
+          );
+
+          if (isProfileSet || hasFinancialHistory) {
+            setOnboardingCompleted(true);
+            setOnboardingStep('completed');
+            setTutorialCompleted(true);
+            try {
+              localStorage.setItem(`${ONBOARDING_KEY_PREFIX}${userId}`, 'true');
+              localStorage.setItem(`${ONBOARDING_STEP_PREFIX}${userId}`, 'completed');
+              localStorage.setItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`, 'true');
+            } catch (_e) {}
+            // Gracefully persist to Firestore
+            setDoc(userDocRef, {
+              onboardingCompleted: true,
+              onboardingStep: 'completed',
+              tutorialCompleted: true
+            }, { merge: true }).catch(() => {});
+          } else {
+            setOnboardingCompleted(false);
+            setOnboardingStep('profile');
+            try {
+              localStorage.setItem(`${ONBOARDING_KEY_PREFIX}${userId}`, 'false');
+              localStorage.setItem(`${ONBOARDING_STEP_PREFIX}${userId}`, 'profile');
+            } catch (_e) {}
           }
         }
       } else if (currentUser) {
@@ -143,6 +212,8 @@ export function FinanceProvider({ children }) {
           budgets: [],
           savingsGoals: [],
           accounts: [],
+          onboardingCompleted: false,
+          onboardingStep: 'profile',
           tutorialCompleted: false,
           createdAt: new Date().toISOString()
         }).catch(err => console.warn('Firestore seed warning', err));
@@ -158,10 +229,30 @@ export function FinanceProvider({ children }) {
     return () => unsubscribe();
   }, [userId, updateUserProfile]);
 
-  const completeTutorial = useCallback(() => {
+  const updateOnboardingStep = useCallback((step) => {
+    setOnboardingStep(step);
+    try {
+      localStorage.setItem(`${ONBOARDING_STEP_PREFIX}${userId}`, step);
+    } catch (_e) {}
+    setOnboardingStatus(userId, { completed: step === 'completed', step });
+  }, [userId]);
+
+  const completeOnboarding = useCallback(() => {
+    setOnboardingCompleted(true);
+    setOnboardingStep('completed');
     setTutorialCompleted(true);
+    try {
+      localStorage.setItem(`${ONBOARDING_KEY_PREFIX}${userId}`, 'true');
+      localStorage.setItem(`${ONBOARDING_STEP_PREFIX}${userId}`, 'completed');
+      localStorage.setItem(`${STORAGE_KEYS.TUTORIAL}_${userId}`, 'true');
+    } catch (_e) {}
+    setOnboardingStatus(userId, { completed: true, step: 'completed' });
     setTutorialCompletion(userId, true);
   }, [userId]);
+
+  const completeTutorial = useCallback(() => {
+    completeOnboarding();
+  }, [completeOnboarding]);
 
   const resetTutorial = useCallback(() => {
     setTutorialCompleted(false);
@@ -496,7 +587,7 @@ export function FinanceProvider({ children }) {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `kampuskash_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `kirokash_transactions_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -516,7 +607,7 @@ export function FinanceProvider({ children }) {
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(dataBundle, null, 2))}`;
     const link = document.createElement('a');
     link.setAttribute('href', jsonString);
-    link.setAttribute('download', `kampuskash_backup_${new Date().toISOString().split('T')[0]}.json`);
+    link.setAttribute('download', `kirokash_backup_${new Date().toISOString().split('T')[0]}.json`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -582,10 +673,14 @@ export function FinanceProvider({ children }) {
     exportToCSV,
     exportJSONBackup,
     importJSONBackup,
-    // Tutorial
+    // Tutorial & Onboarding
     tutorialCompleted,
     completeTutorial,
-    resetTutorial
+    resetTutorial,
+    onboardingCompleted,
+    onboardingStep,
+    updateOnboardingStep,
+    completeOnboarding
   }), [
     categories, transactions, budgets, savingsGoals, accounts, isLoading, loadError,
     totalBalance, totalIncome, totalExpense, totalAccountBalance, totalSavedInGoals, categorySpendingBreakdown,
@@ -595,7 +690,8 @@ export function FinanceProvider({ children }) {
     upsertBudget, deleteBudget,
     addSavingsGoal, updateSavingsGoal, depositToSavingsGoal, deleteSavingsGoal,
     exportToPDF, exportToCSV, exportJSONBackup, importJSONBackup,
-    tutorialCompleted, completeTutorial, resetTutorial
+    tutorialCompleted, completeTutorial, resetTutorial,
+    onboardingCompleted, onboardingStep, updateOnboardingStep, completeOnboarding
   ]);
 
   return (

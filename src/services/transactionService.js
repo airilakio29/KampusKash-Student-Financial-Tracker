@@ -1,5 +1,5 @@
 /**
- * KampusKash Transaction Service
+ * KiroKash Transaction Service
  * Manages transaction CRUD and financial calculations.
  * Phase 1: source = "manual" only.
  */

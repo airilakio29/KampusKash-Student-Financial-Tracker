@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useId } from 'react';
 import { verifyResetCode, confirmNewPassword } from '../services/authService';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/kiro-logo.png';
 import { 
   Lock, 
   Eye, 
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 /**
- * Custom Password Reset Component for KampusKash
+ * Custom Password Reset Component for KiroKash
  * Handles action links from Firebase auth action emails (oobCode parameter).
  *
  * Flow:
@@ -25,7 +25,7 @@ import {
  * 5. Shows success card with redirect to login
  */
 export default function ResetPassword({ oobCode: propCode, onBackToLogin }) {
-  const publicLogo = `${import.meta.env.BASE_URL || '/'}logo.png`.replace(/\/{2,}/g, '/');
+  const publicLogo = `${import.meta.env.BASE_URL || '/'}kiro-logo.png`.replace(/\/{2,}/g, '/');
 
   // URL action code extraction (prop, search query, or hash params)
   const extractCode = () => {
@@ -204,9 +204,10 @@ export default function ResetPassword({ oobCode: propCode, onBackToLogin }) {
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div
             style={{
-              width: '64px',
-              height: '64px',
-              margin: '0 auto 1rem',
+              width: 'min(210px, 65vw)',
+              height: 'auto',
+              maxHeight: '75px',
+              margin: '0 auto 0.75rem',
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
@@ -215,16 +216,16 @@ export default function ResetPassword({ oobCode: propCode, onBackToLogin }) {
           >
             <img
               src={logoImg || publicLogo}
-              alt="KampusKash Logo"
+              alt="KiroKash Logo"
               onError={(e) => {
                 if (e.target.src !== publicLogo) e.target.src = publicLogo;
               }}
               style={{
                 width: '100%',
-                height: '100%',
+                height: 'auto',
+                maxHeight: '75px',
                 objectFit: 'contain',
-                borderRadius: '16px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.35)'
+                filter: 'drop-shadow(0 6px 18px rgba(139, 92, 246, 0.35))'
               }}
             />
           </div>
@@ -249,7 +250,7 @@ export default function ResetPassword({ oobCode: propCode, onBackToLogin }) {
               marginBottom: 0
             }}
           >
-            Create a secure new password for your KampusKash account
+            Create a secure new password for your KiroKash account
           </p>
         </div>
 
@@ -650,7 +651,7 @@ export default function ResetPassword({ oobCode: propCode, onBackToLogin }) {
                 margin: '0 0 1.75rem'
               }}
             >
-              Your password has been securely updated. You can now log in to KampusKash with your new credentials.
+              Your password has been securely updated. You can now log in to KiroKash with your new credentials.
             </p>
 
             <button

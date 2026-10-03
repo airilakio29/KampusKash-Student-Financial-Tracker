@@ -254,24 +254,45 @@ export default function GlitterBackground() {
       
       ctx.clearRect(0, 0, width, height);
 
-      const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-      bgGrad.addColorStop(0, colors.bgApp);
-      bgGrad.addColorStop(0.5, colors.primaryHover);
-      bgGrad.addColorStop(1, colors.primaryHover);
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, width, height);
+      if (colors.preset === 'kiro') {
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+        bgGrad.addColorStop(0, '#0A0A0F');
+        bgGrad.addColorStop(0.5, '#0F0C1B');
+        bgGrad.addColorStop(1, '#060609');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
 
-      const glowGrad = ctx.createRadialGradient(width * 0.3, height * 0.2, 0, width * 0.3, height * 0.2, width * 0.6);
-      glowGrad.addColorStop(0, `${colors.primaryLight}1E`);
-      glowGrad.addColorStop(1, 'rgba(232, 222, 245, 0)');
-      ctx.fillStyle = glowGrad;
-      ctx.fillRect(0, 0, width, height);
+        const glowGrad = ctx.createRadialGradient(width * 0.25, height * 0.25, 0, width * 0.25, height * 0.25, width * 0.55);
+        glowGrad.addColorStop(0, 'rgba(121, 40, 202, 0.18)');
+        glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(0, 0, width, height);
 
-      const glow2 = ctx.createRadialGradient(width * 0.75, height * 0.6, 0, width * 0.75, height * 0.6, width * 0.4);
-      glow2.addColorStop(0, `${colors.textMain}10`);
-      glow2.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = glow2;
-      ctx.fillRect(0, 0, width, height);
+        const glow2 = ctx.createRadialGradient(width * 0.8, height * 0.7, 0, width * 0.8, height * 0.7, width * 0.45);
+        glow2.addColorStop(0, 'rgba(139, 92, 246, 0.12)');
+        glow2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = glow2;
+        ctx.fillRect(0, 0, width, height);
+      } else {
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+        bgGrad.addColorStop(0, colors.bgApp);
+        bgGrad.addColorStop(0.5, colors.primaryHover);
+        bgGrad.addColorStop(1, colors.primaryHover);
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        const glowGrad = ctx.createRadialGradient(width * 0.3, height * 0.2, 0, width * 0.3, height * 0.2, width * 0.6);
+        glowGrad.addColorStop(0, `${colors.primaryLight}1E`);
+        glowGrad.addColorStop(1, 'rgba(232, 222, 245, 0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        const glow2 = ctx.createRadialGradient(width * 0.75, height * 0.6, 0, width * 0.75, height * 0.6, width * 0.4);
+        glow2.addColorStop(0, `${colors.textMain}10`);
+        glow2.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glow2;
+        ctx.fillRect(0, 0, width, height);
+      }
 
       moneyItems.forEach(item => {
         item.y += item.vy;
@@ -289,7 +310,10 @@ export default function GlitterBackground() {
         const shimmerAlpha = Math.sin(item.shimmer) * 0.15 + 0.85;
 
         // Render based on theme
-        if (colors.preset === 'ocean') {
+        if (colors.preset === 'kiro') {
+          if (item.type === 'primary') drawCoin(ctx, item.x, item.y, item.size * 0.45, item.alpha * shimmerAlpha * 0.6, colors, '⚡');
+          else drawBill(ctx, item.x, item.y, item.size * 0.85, item.rotation, item.alpha * shimmerAlpha * 0.35, colors);
+        } else if (colors.preset === 'ocean') {
           if (item.type === 'primary') drawBubble(ctx, item.x, item.y, item.size * 0.6, item.alpha * shimmerAlpha);
           else drawCoin(ctx, item.x, item.y, item.size * 0.4, item.alpha * shimmerAlpha, colors);
         } else if (colors.preset === 'mint' || colors.preset === 'forest') {

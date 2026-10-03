@@ -1,5 +1,5 @@
 /**
- * KampusKash Account Service
+ * KiroKash Account Service
  * Manages user financial accounts (Savings, Current, E-wallet, Cash, Credit Card, Other).
  * Phase 1: source = "manual" only.
  * Future: source can be "bank" or "imported".

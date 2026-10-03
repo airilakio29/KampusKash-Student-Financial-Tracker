@@ -1,14 +1,42 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Menu, Calendar, ShieldCheck, FileText, LogOut, ChevronDown, User } from 'lucide-react';
+import { Menu, Calendar, ShieldCheck, FileText, LogOut, ChevronDown, User, Palette } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { PRESET_THEMES, loadSavedTheme, saveTheme } from '../utils/themeEngine';
 import UserAvatar from './UserAvatar';
 
 export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "Dashboard" }) {
   const { user, logout } = useAuth();
   const { exportToPDF } = useFinance();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [currentThemeId, setCurrentThemeId] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.getAttribute('data-theme-preset') || loadSavedTheme()?.presetId || 'kiro';
+    }
+    return 'kiro';
+  });
+
   const dropdownRef = useRef(null);
+  const themeDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleThemeChange = (e) => {
+      if (e.detail?.presetId) {
+        setCurrentThemeId(e.detail.presetId);
+      }
+    };
+    window.addEventListener('themeChanged', handleThemeChange);
+    return () => window.removeEventListener('themeChanged', handleThemeChange);
+  }, []);
+
+  const handleSelectTheme = (presetId) => {
+    saveTheme({ presetId, customColors: null });
+    setCurrentThemeId(presetId);
+    setIsThemeOpen(false);
+  };
+
+  const currentTheme = PRESET_THEMES.find(t => t.id === currentThemeId) || PRESET_THEMES[0];
 
   // Derive a clean display name — never show UID or technical identifiers
   const displayName = (() => {
@@ -26,20 +54,24 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
     day: 'numeric'
   });
 
-  // Handle click outside to close dropdown
+  // Handle click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
+      if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target)) {
+        setIsThemeOpen(false);
+      }
     };
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsProfileOpen(false);
+        setIsThemeOpen(false);
       }
     };
 
-    if (isProfileOpen) {
+    if (isProfileOpen || isThemeOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
     }
@@ -47,7 +79,7 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isProfileOpen]);
+  }, [isProfileOpen, isThemeOpen]);
 
   const handleExportPDF = () => {
     setIsProfileOpen(false);
@@ -111,6 +143,93 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
         <div className="badge badge-income" style={{ whiteSpace: 'nowrap' }}>
           <ShieldCheck size={13} />
           <span>Signed In</span>
+        </div>
+
+        {/* Navbar Theme Selector */}
+        <div style={{ position: 'relative' }} ref={themeDropdownRef}>
+          <button
+            onClick={() => setIsThemeOpen(prev => !prev)}
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.35rem 0.75rem' }}
+            title="Switch Theme"
+            aria-label="Theme Selector"
+            aria-expanded={isThemeOpen}
+          >
+            <span>{currentTheme?.icon || '⚡'}</span>
+            <span style={{ fontWeight: 600 }}>{currentTheme?.name || 'Theme'}</span>
+            <ChevronDown size={14} style={{ transform: isThemeOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+          </button>
+
+          {isThemeOpen && (
+            <div
+              className="navbar-theme-dropdown"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: '220px',
+                background: 'var(--bg-sidebar)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: '0 16px 36px -4px rgba(0, 0, 0, 0.65)',
+                padding: '0.4rem',
+                zIndex: 1000,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.2rem',
+                animation: 'slideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+            >
+              <div style={{ padding: '0.35rem 0.5rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Preset Themes
+              </div>
+              {PRESET_THEMES.map(t => {
+                const isSelected = currentThemeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => handleSelectTheme(t.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      padding: '0.45rem 0.6rem',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      background: isSelected ? 'rgba(139, 92, 246, 0.22)' : 'transparent',
+                      color: isSelected ? 'var(--text-white)' : 'var(--text-main)',
+                      fontSize: '0.82rem',
+                      fontWeight: isSelected ? 700 : 500,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'background 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>{t.icon}</span>
+                      <span>{t.name}</span>
+                    </span>
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: t.tokens['--primary'] || '#8B5CF6',
+                        boxShadow: isSelected ? `0 0 8px ${t.tokens['--primary']}` : 'none'
+                      }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Profile Pill Button */}
@@ -209,6 +328,36 @@ export default function Header({ onOpenMobileMenu, onOpenProfileModal, title = "
             }}>
               <Calendar size={13} />
               <span>{todayStr}</span>
+            </div>
+
+            {/* Theme Quick Selector for Mobile */}
+            <div style={{
+              padding: '0.6rem 0.85rem',
+              borderBottom: '1px solid var(--border-light)'
+            }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Palette size={13} /> Theme Preset
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                {PRESET_THEMES.slice(0, 5).map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleSelectTheme(t.id)}
+                    style={{
+                      padding: '0.25rem 0.55rem',
+                      fontSize: '0.75rem',
+                      borderRadius: '12px',
+                      border: currentThemeId === t.id ? '1px solid var(--primary)' : '1px solid var(--border-light)',
+                      background: currentThemeId === t.id ? 'var(--primary)' : 'transparent',
+                      color: currentThemeId === t.id ? '#FFFFFF' : 'var(--text-main)',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
+                  >
+                    {t.icon} {t.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Actions List with Accessible >= 44px Touch Targets */}

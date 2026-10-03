@@ -54,7 +54,12 @@ import {
   getTotalTourSteps
 } from '../src/services/tutorialService.js';
 
-describe('KampusKash Phase 1 Foundation Test Suite', () => {
+import {
+  setOnboardingStatus,
+  getOnboardingStatus
+} from '../src/services/settingsService.js';
+
+describe('KiroKash Phase 1 Foundation Test Suite', () => {
 
   // ==================== AUTH & PROFILE TESTS ====================
   describe('Profile & Authentication Formatting', () => {
@@ -125,7 +130,7 @@ describe('KampusKash Phase 1 Foundation Test Suite', () => {
 
     it('should support sending password reset with actionCodeSettings to custom reset-password url', async () => {
       const res = await sendPasswordReset('student@campus.my', {
-        url: 'https://kampuskash.vercel.app/reset-password',
+        url: 'https://kirokash.vercel.app/reset-password',
         handleCodeInApp: true
       });
       assert.equal(typeof res.success, 'boolean');
@@ -143,7 +148,7 @@ describe('KampusKash Phase 1 Foundation Test Suite', () => {
     });
 
     it('should correctly detect root resetPassword query parameters for redirect', () => {
-      const searchUrl = 'https://kampuskash.vercel.app/?mode=resetPassword&oobCode=sampleCode123';
+      const searchUrl = 'https://kirokash.vercel.app/?mode=resetPassword&oobCode=sampleCode123';
       const parsedUrl = new URL(searchUrl);
       const mode = parsedUrl.searchParams.get('mode');
       const oobCode = parsedUrl.searchParams.get('oobCode');
@@ -552,6 +557,35 @@ describe('KampusKash Phase 1 Foundation Test Suite', () => {
       const pdfStep = getTourStepById('export-pdf');
       assert.ok(pdfStep !== undefined);
       assert.match(pdfStep.title, /PDF/i);
+    });
+
+    it('should configure finish step with student completion celebration and dashboard target', () => {
+      const finishStep = getTourStepById('finish');
+      assert.ok(finishStep !== undefined);
+      assert.equal(finishStep.tab, 'dashboard');
+      assert.match(finishStep.title, /You're all set/i);
+      assert.ok(finishStep.description.length > 20);
+    });
+
+    it('should manage and persist onboarding status and step progression', async () => {
+      const testUserId = 'test-onboarding-user-123';
+      
+      // Default / empty status
+      const initial = await getOnboardingStatus(testUserId);
+      assert.equal(initial.completed, false);
+      assert.equal(initial.step, 'profile');
+
+      // Transition to Step B (tutorial)
+      await setOnboardingStatus(testUserId, { completed: false, step: 'tutorial' });
+      const mid = await getOnboardingStatus(testUserId);
+      assert.equal(mid.completed, false);
+      assert.equal(mid.step, 'tutorial');
+
+      // Completion of entire onboarding
+      await setOnboardingStatus(testUserId, { completed: true, step: 'completed' });
+      const completed = await getOnboardingStatus(testUserId);
+      assert.equal(completed.completed, true);
+      assert.equal(completed.step, 'completed');
     });
   });
 

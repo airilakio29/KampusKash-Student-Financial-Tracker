@@ -1,5 +1,5 @@
 /**
- * KampusKash Savings Service
+ * KiroKash Savings Service
  * Handles savings goals creation, validation, progress calculation, and persistence.
  * Phase 1: Local state + Firestore users/{userId} sync.
  * Future (Phase 2): AWS Lambda + DynamoDB.

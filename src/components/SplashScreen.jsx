@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logoImg from '../assets/kiro-logo.png';
 
 export default function SplashScreen({ onFinished }) {
   const [progress, setProgress] = useState(0);
@@ -27,6 +28,8 @@ export default function SplashScreen({ onFinished }) {
     return () => clearInterval(interval);
   }, [onFinished]);
 
+  const publicLogo = `${import.meta.env.BASE_URL || '/'}kiro-logo.png`.replace(/\/{2,}/g, '/');
+
   return (
     <div style={{
       position: 'fixed',
@@ -36,7 +39,7 @@ export default function SplashScreen({ onFinished }) {
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'column',
-      background: 'var(--bg-app, #624873)',
+      background: 'var(--bg-app, #0a0a0f)',
       opacity: fadeOut ? 0 : 1,
       transition: 'opacity 0.5s ease-out',
       pointerEvents: fadeOut ? 'none' : 'auto'
@@ -47,7 +50,7 @@ export default function SplashScreen({ onFinished }) {
         width: '400px',
         height: '400px',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, color-mix(in srgb, var(--primary, #624873) 20%, transparent), transparent 70%)',
+        background: 'radial-gradient(circle, rgba(139, 92, 246, 0.25), transparent 70%)',
         animation: 'splashPulse 2.4s ease-in-out infinite',
         pointerEvents: 'none'
       }} />
@@ -56,7 +59,7 @@ export default function SplashScreen({ onFinished }) {
         width: '600px',
         height: '600px',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, color-mix(in srgb, var(--primary-light, #E8DEF5) 8%, transparent), transparent 70%)',
+        background: 'radial-gradient(circle, rgba(121, 40, 202, 0.15), transparent 70%)',
         animation: 'splashPulse 3s ease-in-out infinite 0.5s',
         pointerEvents: 'none'
       }} />
@@ -73,48 +76,26 @@ export default function SplashScreen({ onFinished }) {
       }}>
         {/* Logo mark */}
         <div style={{
-          width: '90px',
-          height: '90px',
-          borderRadius: '20px',
-          background: 'linear-gradient(135deg, var(--primary, #624873), var(--primary-hover, #4A3657))',
+          width: 'clamp(200px, 48vw, 290px)',
+          height: 'auto',
+          maxHeight: '105px',
+          background: 'transparent',
+          border: 'none',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 20px 60px color-mix(in srgb, var(--primary, #624873) 40%, transparent), 0 0 80px color-mix(in srgb, var(--primary-light, #E8DEF5) 15%, transparent)',
-          animation: 'splashLogoGlow 2s ease-in-out infinite'
+          filter: 'drop-shadow(0 10px 30px rgba(139, 92, 246, 0.45))',
+          animation: 'splashLogoGlow 2s ease-in-out infinite',
+          padding: '0'
         }}>
-          <span style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontWeight: 800,
-            fontSize: '2rem',
-            color: 'var(--text-white, #FFFFFF)',
-            letterSpacing: '-0.02em'
-          }}>KK</span>
-        </div>
-
-        {/* Brand text */}
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: '2.5rem',
-            fontWeight: 800,
-            color: 'var(--text-main, #F3EDF9)',
-            letterSpacing: '-0.03em',
-            lineHeight: 1.1,
-            margin: 0
-          }}>
-            KampusKash
-          </h1>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '0.95rem',
-            color: 'var(--text-muted, #C4B5D4)',
-            marginTop: '0.5rem',
-            fontWeight: 500,
-            letterSpacing: '0.02em'
-          }}>
-            Your friendly campus wallet
-          </p>
+          <img
+            src={logoImg || publicLogo}
+            alt="Logo"
+            onError={(e) => {
+              if (e.target.src !== publicLogo) e.target.src = publicLogo;
+            }}
+            style={{ width: '100%', height: 'auto', maxHeight: '105px', objectFit: 'contain' }}
+          />
         </div>
 
         {/* Loading bar */}

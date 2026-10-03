@@ -1,5 +1,5 @@
 /**
- * KampusKash Tutorial Service
+ * KiroKash Tutorial Service
  * Central definition of tour steps, walkthrough milestones, and helpers.
  */
 
@@ -8,7 +8,7 @@ export const TOUR_STEPS = [
     id: 'welcome',
     targetSelector: '[data-tour="dashboard-metrics"]',
     tab: 'dashboard',
-    title: 'Welcome to KampusKash',
+    title: 'Welcome to KiroKash',
     description: 'Your all-in-one student financial command center. Track your total balance across accounts, monitor allowance and loan income, keep expenses in check, and view your goal savings at a glance.',
     iconName: 'LayoutDashboard',
     preferredPosition: 'bottom'
@@ -124,9 +124,9 @@ export const TOUR_STEPS = [
   {
     id: 'finish',
     targetSelector: null,
-    tab: 'settings',
-    title: "You're Ready to Master Your Finances! 🎓",
-    description: 'KampusKash makes smart campus budgeting simple and rewarding. Start tracking your income, setting budgets, and achieving your financial goals today!',
+    tab: 'dashboard',
+    title: "You're all set! 🎓",
+    description: "You're ready to master your student finances! Start tracking everyday spending, managing campus budgets, and hitting your savings goals with KiroKash.",
     iconName: 'Check',
     preferredPosition: 'center'
   }

@@ -1,12 +1,12 @@
-# KampusKash — System Architecture & Roadmap
+# KiroKash — System Architecture & Roadmap
 
-This document outlines the current technical architecture of KampusKash (Phase 1 Foundation) and the planned cloud migration path for subsequent roadmap phases.
+This document outlines the current technical architecture of KiroKash (Phase 1 Foundation) and the planned cloud migration path for subsequent roadmap phases.
 
 ---
 
 ## 1. Current Architecture (Phase 1: Product Foundation)
 
-KampusKash currently operates on a modern client-centric architecture backed by Google Firebase. All operations are isolated per authenticated student.
+KiroKash currently operates on a modern client-centric architecture backed by Google Firebase. All operations are isolated per authenticated student.
 
 ```mermaid
 graph TD
@@ -39,7 +39,7 @@ graph TD
 4. **App Presentation & Authentication Flow**:
    - `FullScreenLoader.jsx` — Renders centered branding with smooth breathing/pulse glow and indeterminate progress bar while `onAuthStateChanged` resolves.
    - `ResetPassword.jsx` — Handles custom Firebase action codes (`oobCode`) from query params and hash routes, validating codes via `verifyPasswordResetCode` and applying new passwords with `confirmPasswordReset`.
-   - `Auth.jsx` — Polished student authentication interface featuring KampusKash branding and self-service password recovery.
+   - `Auth.jsx` — Polished student authentication interface featuring KiroKash branding and self-service password recovery.
 5. **Cloud Persistence (Cloud Firestore)**: Scoped strictly to `/users/{userId}` where `{userId} == request.auth.uid`.
 
 ---
@@ -161,7 +161,7 @@ The Firestore document schema in Phase 1 is explicitly designed to map directly 
 1. **User Isolation**:
    Every read and write in Firestore requires `request.auth.uid == userId`. No user can access or modify another student's financial records.
 2. **No Banking Credentials Stored**:
-   Phase 1 supports **manual** tracking only. KampusKash does **NOT** store bank passwords, PINs, OTPs, or session tokens.
+   Phase 1 supports **manual** tracking only. KiroKash does **NOT** store bank passwords, PINs, OTPs, or session tokens.
 3. **Phase 4 Roadmap Note**:
    Authorized bank integrations and Open Finance APIs will be introduced strictly in Phase 4 under licensed Open Banking protocols (e.g., PayNet / DuitNow Open Banking frameworks in Malaysia). No credential scraping will ever be used.
 

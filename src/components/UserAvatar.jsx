@@ -25,7 +25,7 @@ const ICON_MAP = {
 };
 
 /**
- * Universal User Avatar Component for KampusKash.
+ * Universal User Avatar Component for KiroKash.
  * Seamlessly renders custom uploaded photos, modern student SVG presets, emojis, or letter initials.
  */
 export default function UserAvatar({

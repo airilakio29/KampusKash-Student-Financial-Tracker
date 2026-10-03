@@ -16,7 +16,7 @@ app.use(express.json({ limit: '10mb' }));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    appName: 'KampusKash API',
+    appName: 'KiroKash API',
     currency: 'MYR (RM)',
     timestamp: new Date().toISOString()
   });
@@ -155,5 +155,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[KampusKash Node Server] Running on http://localhost:${PORT}`);
+  console.log(`[KiroKash Node Server] Running on http://localhost:${PORT}`);
 });

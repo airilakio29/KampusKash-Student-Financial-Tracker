@@ -1,6 +1,6 @@
 /**
- * KampusKash Theme & Design Token Engine
- * Manages 9 preset themes, custom color overrides, CSS design token injection,
+ * KiroKash Theme & Design Token Engine
+ * Manages 10 preset themes, custom color overrides, CSS design token injection,
  * and persistence across desktop and mobile.
  */
 
@@ -8,8 +8,34 @@ export const STORAGE_KEY_THEME = 'student_tracker_theme_customization';
 
 export const PRESET_THEMES = [
   {
+    id: 'kiro',
+    name: 'Kiro',
+    icon: '⚡',
+    description: 'Signature onyx black with neon electric purple glow',
+    isDecorativeCat: false,
+    tokens: {
+      '--bg-app': '#0A0A0F',
+      '--bg-card': 'rgba(15, 12, 27, 0.75)',
+      '--bg-card-subtle': 'rgba(24, 18, 43, 0.65)',
+      '--bg-sidebar': '#060609',
+      '--bg-sidebar-active': '#7928CA',
+      '--primary': '#8B5CF6',
+      '--primary-hover': '#7928CA',
+      '--primary-light': '#EDE9FE',
+      '--primary-badge': '#A855F7',
+      '--text-main': '#F8FAFC',
+      '--text-muted': '#C4B5FD',
+      '--text-light': '#A78BFA',
+      '--text-white': '#FFFFFF',
+      '--income': '#10B981',
+      '--expense': '#F43F5E',
+      '--warning': '#FBBF24',
+      '--border-light': 'rgba(168, 85, 247, 0.22)'
+    }
+  },
+  {
     id: 'purple',
-    name: 'KampusKash Purple',
+    name: 'KiroKash Purple',
     icon: '🔮',
     description: 'Original signature gemstone purple interface',
     isDecorativeCat: false,
@@ -268,12 +294,22 @@ export function applyThemeTokens(themeConfig) {
     root.style.setProperty(prop, val);
   });
 
-  // 5. Store active theme attribute for decorative elements (e.g. Cute Cat)
+  // 5. Store active theme attribute for decorative elements (e.g. Kiro, Cute Cat)
   root.setAttribute('data-theme-preset', preset.id);
+  if (preset.id === 'kiro') {
+    root.setAttribute('data-kiro', 'true');
+  } else {
+    root.removeAttribute('data-kiro');
+  }
   if (preset.isDecorativeCat) {
     root.setAttribute('data-cute-cat', 'true');
   } else {
     root.removeAttribute('data-cute-cat');
+  }
+
+  // 6. Broadcast event so components (Kiro particles, headers, etc.) update dynamically
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { presetId: preset.id, config: themeConfig } }));
   }
 }
 
@@ -288,7 +324,7 @@ export function loadSavedTheme() {
   } catch (e) {
     console.error('Failed to load theme from LocalStorage', e);
   }
-  const defaultConfig = { presetId: 'purple', customColors: null };
+  const defaultConfig = { presetId: 'kiro', customColors: null };
   applyThemeTokens(defaultConfig);
   return defaultConfig;
 }

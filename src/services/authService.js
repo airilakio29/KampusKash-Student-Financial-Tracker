@@ -1,5 +1,5 @@
 /**
- * KampusKash Authentication Service
+ * KiroKash Authentication Service
  * Wraps Firebase Authentication methods and provides user formatting
  * Phase 1: Firebase Auth & Google Login
  * Future (Phase 2): AWS Cognito
@@ -127,7 +127,7 @@ export async function sendPasswordReset(email, customSettings) {
   }
   try {
     const actionCodeSettings = customSettings || {
-      url: 'https://kampuskash.vercel.app/reset-password',
+      url: 'https://kirokash.vercel.app/reset-password',
       handleCodeInApp: true,
     };
     await sendPasswordResetEmail(auth, email, actionCodeSettings);
