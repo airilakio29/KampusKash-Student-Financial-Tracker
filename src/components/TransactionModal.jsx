@@ -78,7 +78,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
       note: note.trim()
     };
 
-    if (initialData) {
+    if (initialData && initialData.id) {
       updateTransaction(initialData.id, payload);
     } else {
       addTransaction(payload);
@@ -92,7 +92,7 @@ export default function TransactionModal({ isOpen, onClose, initialData = null }
       <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h3 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)' }}>
-            {initialData ? 'Edit Transaction' : 'Add New Transaction'}
+            {initialData && initialData.id ? 'Edit Transaction' : 'Add New Transaction'}
           </h3>
           <button onClick={onClose} className="btn btn-secondary btn-icon" aria-label="Close">
             <X size={18} />

@@ -11,7 +11,8 @@ import {
   X,
   Landmark,
   BarChart3,
-  User as UserIcon
+  User as UserIcon,
+  Compass
 } from 'lucide-react';
 import logoImg from '../assets/kiro-logo.png';
 import UserAvatar from './UserAvatar';
@@ -45,6 +46,7 @@ export default function Sidebar({
     { id: 'accounts', label: 'Accounts', icon: Landmark },
     { id: 'budgets', label: 'Budgets', icon: Target },
     { id: 'savings', label: 'Savings Goals', icon: PiggyBank },
+    { id: 'explore', label: 'Explore', icon: Compass },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];

@@ -19,6 +19,7 @@ import SavingsView from './views/SavingsView';
 import AccountsView from './views/AccountsView';
 import ReportsView from './views/ReportsView';
 import SettingsView from './views/SettingsView';
+import ExploreView from './views/ExploreView';
 
 import TransactionModal from './components/TransactionModal';
 import BudgetModal from './components/BudgetModal';
@@ -27,6 +28,21 @@ import CategoryModal from './components/CategoryModal';
 import AccountModal from './components/AccountModal';
 import ProfileModal from './components/ProfileModal';
 import OnboardingWizard from './components/OnboardingWizard';
+
+function getInitialTabFromUrl() {
+  try {
+    const pathname = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    if (pathname.includes('/explore') || hash === '#explore') return 'explore';
+    if (pathname.includes('/transactions') || hash === '#transactions') return 'transactions';
+    if (pathname.includes('/budgets') || hash === '#budgets') return 'budgets';
+    if (pathname.includes('/savings') || hash === '#savings') return 'savings';
+    if (pathname.includes('/accounts') || hash === '#accounts') return 'accounts';
+    if (pathname.includes('/reports') || hash === '#reports') return 'reports';
+    if (pathname.includes('/settings') || hash === '#settings') return 'settings';
+  } catch {}
+  return 'dashboard';
+}
 
 function AppContent() {
   const {
@@ -38,10 +54,24 @@ function AppContent() {
     isLoading,
     loadError
   } = useFinance();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(getInitialTabFromUrl);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isReplayingTutorial, setIsReplayingTutorial] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // Synchronize on browser history popstate / back-forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const currentTab = getInitialTabFromUrl();
+      setActiveTab(currentTab);
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
 
   // Mandatory Onboarding Flow:
   // Step A: Profile setup (required first, blocks app routes)
@@ -55,6 +85,11 @@ function AppContent() {
       return; // Route blocked until profile setup is complete
     }
     setActiveTab(newTab);
+    try {
+      const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+      const targetUrl = newTab === 'dashboard' ? (basePath || '/') : `${basePath}/${newTab}`;
+      window.history.pushState({ tab: newTab }, document.title, targetUrl);
+    } catch {}
   };
 
   const handleOpenProfileModal = () => {
@@ -79,8 +114,8 @@ function AppContent() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
 
-  const handleOpenAddTransaction = () => {
-    setEditingTransaction(null);
+  const handleOpenAddTransaction = (prefill = null) => {
+    setEditingTransaction(prefill);
     setIsTransactionModalOpen(true);
   };
 
@@ -174,6 +209,13 @@ function AppContent() {
             onEditAccount={handleEditAccount}
           />
         );
+      case 'explore':
+        return (
+          <ExploreView
+            onOpenAddTransaction={handleOpenAddTransaction}
+            onNavigateToBudgets={() => handleTabChange('budgets')}
+          />
+        );
       case 'reports':
         return <ReportsView />;
       case 'settings':
@@ -211,6 +253,7 @@ function AppContent() {
       case 'budgets': return 'Category Budgets';
       case 'savings': return 'Student Savings Goals';
       case 'accounts': return 'My Accounts';
+      case 'explore': return 'Explore Ipoh';
       case 'reports': return 'Reports & Analytics';
       case 'settings': return 'App Settings & Backup';
       case 'profile': return 'Student Profile & Customization';
